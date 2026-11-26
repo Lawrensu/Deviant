@@ -182,6 +182,7 @@ classDiagram
         +HashTable~Barrier*~ combinations
         +SinglyLinkedList~Fragment*~ fragments
         +SinglyLinkedList~Barrier*~ barriers
+        +Directory* astraStart
         +buildAct(act) void
         -clear() void
     }
@@ -273,8 +274,8 @@ classDiagram
     }
     class Game {
         +DoublyLinkedList~Command*~ history
-        +perform(command) void
-        +rewind() void
+        +perform(command) bool
+        +rewind() bool
     }
     class Command {
         <<abstract>>
@@ -347,8 +348,10 @@ classDiagram
     }
     class Game {
         +Queue~Process*~ turns
+        +Queue~string~ messages
         +update() void
         +startAct(act) void
+        +say(text) void
     }
     class Process {
         <<abstract>>
@@ -356,7 +359,7 @@ classDiagram
 
     Queue *-- QueueNode
     QueueNode o-- QueueNode : next
-    Game *-- Queue : turns
+    Game *-- Queue : turns and messages
     Queue o-- Process
 
     note for Game "update(): dequeue the front actor, let it take its turn, enqueue it at the back\nAstra joins when Noticed, both defenders in the final battle"
@@ -470,21 +473,28 @@ classDiagram
         +tokenCost()* int
     }
     class MoveCommand {
+        -Directory* target
         -Directory* previous
     }
     class OpenFileCommand {
+        -File* file
         -Fragment* taken
     }
     class UnlockCommand {
+        -Directory* directory
+        -File* file
         -int privilegeSpent
     }
     class AddFragmentCommand {
         -Fragment* fragment
+        +getFragment() Fragment*
     }
     class RemoveFragmentCommand {
         -Fragment* fragment
     }
     class SubmitChainCommand {
+        -string key
+        -string result
         +canUndo() bool
     }
     class Parser {
@@ -492,8 +502,9 @@ classDiagram
     }
     class Game {
         +DoublyLinkedList~Command*~ history
-        +perform(command) void
-        +rewind() void
+        +string input
+        +perform(command) bool
+        +rewind() bool
     }
 
     Command <|-- MoveCommand

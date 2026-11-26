@@ -25,7 +25,7 @@ Deviant/
   Deviant.sln
   Deviant/
     Deviant.vcxproj
-    main.cpp              # entry point, opens the window and runs the game loop, or runs a demo
+    main.cpp              # entry point: the window, --text for the console game, or --demo <concept>
     demo/
       Demo.h/.cpp         # console demo of each assessed concept, run with --demo <concept>
     structures/
@@ -166,7 +166,7 @@ Runtime folders, beside the executable:
 Roles:
 - Aggregate: `SinglyLinkedList`, `DoublyLinkedList`, `DirectoryTree`, each returns iterators through `begin()` and `end()`
 - Iterator: A nested `Iterator` class per structure, holding the current position and nothing else
-- Client: `Renderer` (inventory, history), `Fable` (history backward), the reveal (history forward), `DirectoryTree::find` (tree search)
+- Client: `Renderer` (inventory, history), `Parser` (inventory view), `Fable` (history backward), the reveal (history forward), `DirectoryTree::find` (tree search)
 
 Each iterator offers the same operations, so every client walks every structure the same way:
 - `operator*`: The current value
@@ -213,7 +213,7 @@ Roles:
 - History: `DoublyLinkedList<Command*>`, owned by `Game`
 
 Flow of one action:
-1. The player types a command, `Parser` builds the concrete command
+1. The player types a command, `Parser` checks every rule and builds the concrete command, so a refused action costs nothing
 2. `Game::perform` checks the tokens, charges them and calls `execute`
 3. The command is pushed to the back of the history
 4. Fable reads the history backward for the last `AddFragmentCommand` to block
@@ -228,11 +228,11 @@ Flow of the reveal:
 
 What each command stores to undo itself:
 - `MoveCommand`: The directory it left
-- `OpenFileCommand`: The fragment it took, if any
+- `OpenFileCommand`: The file, and the fragment it took, if any
 - `UnlockCommand`: The directory or file it unlocked and the privilege spent
 - `AddFragmentCommand`: The fragment, which `undo` pops off the chain and returns to the inventory
 - `RemoveFragmentCommand`: The fragment, which `undo` pushes back onto the chain
-- `SubmitChainCommand`: Nothing, it cannot be undone
+- `SubmitChainCommand`: Nothing, it cannot be undone, it keeps the chain key and the result only for the incident log
 
 
 ---
@@ -381,6 +381,7 @@ public:
     HashTable<Barrier*> combinations;
     SinglyLinkedList<Fragment*> fragments;  // owns every fragment of the act, wherever it is now
     SinglyLinkedList<Barrier*> barriers;    // owns every barrier of the act
+    Directory* astraStart;                  // where Astra appears when she becomes active
     void buildAct(int act);  // directories, files, fragments, barriers and combinations of one act
 private:
     void clear();            // frees the last act before the next is built
@@ -445,10 +446,15 @@ public:
 
 // Commands.h: MoveCommand, OpenFileCommand, UnlockCommand, AddFragmentCommand,
 // RemoveFragmentCommand, SubmitChainCommand, each overrides the methods above
+// AddFragmentCommand also has getFragment(), which Fable reads
 
 class Parser {
 public:
-    Command* parse(const std::string& input, Game& game);  // nullptr when the input is not a command
+    // nullptr when the input is not a command: a view (ls, inventory, chain, status, help),
+    // a mistake or a refused action, the output or the reason goes to Game::messages
+    Command* parse(const std::string& input, Game& game);
+private:
+    // one parse function per command and one show function per view
 };
 ```
 
@@ -474,12 +480,19 @@ public:
     Stack<Fragment*, CHAIN_LIMIT> chain;
     DoublyLinkedList<Command*> history;
     Queue<Process*> turns;
+    Queue<std::string> messages;     // lines waiting to be shown to the player
+    std::string input;               // the line the player typed, empty while waiting
 
-    void perform(Command* command);  // charge, execute, record, update detection
-    void rewind();
-    void raiseDetection(int amount);
+    bool perform(Command* command);  // charge, execute, record, false when refused
+    bool rewind();                   // false when refused
+    void raiseDetection(int amount); // tells the player when the stage changes, Astra joins the turns when noticed
     void update();                   // one frame: the front actor takes its turn
-    void startAct(int act);
+    void startAct(int act);          // also empties the inventory and chain, their fragments belong to the last act
+    void say(const std::string& text);
+private:
+    void clearHistory();
+    bool actComplete();              // every barrier of the act is broken
+    void gameOver(const std::string& reason);
 };
 
 class Save {

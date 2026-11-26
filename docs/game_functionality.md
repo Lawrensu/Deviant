@@ -23,6 +23,7 @@ Player:
 - Move into a child directory or back to the parent
 - Open a file to read it, or take the fragment inside it
 - View the fragment inventory
+- Views (directory listing, inventory, chain, status, help) are free and do not use the player's turn
 - Add a fragment from the inventory to the chain
 - Remove the last fragment added to the chain
 - Submit the chain against the barrier of the current directory
@@ -102,6 +103,7 @@ The player cannot:
 	- The harness comments, and the game reloads the save from the start of the act
 - Next act
 	- When the last barrier of an act breaks: Start the next act, reset detection to Hidden and save
+	- The inventory and chain start empty, their fragments belong to the last act
 	- After Act 3: The reveal replays the incident log, then the final battle starts
 - Final battle
 	- Fable and Astra are both active, and the player starts at Hunted

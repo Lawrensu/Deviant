@@ -13,6 +13,9 @@ public:
     HashTable<Barrier*> combinations;       // chain key in order, e.g. "f01+f02", to the barrier it breaks
     SinglyLinkedList<Fragment*> fragments;  // owns every fragment of the act, in a file, the inventory or the chain
     SinglyLinkedList<Barrier*> barriers;    // owns every barrier of the act
+    Directory* astraStart;                  // where Astra appears when she becomes active
+
+    World();
 
     ~World();
 

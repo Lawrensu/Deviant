@@ -13,7 +13,7 @@ public:
 
     Fable();
 
-    // Raises detection when the player enters her directory, blocks the last added fragment while they stay (Phase 3)
+    // Raises detection when the player enters her directory, blocks the last added fragment while they stay
     bool takeTurn(Game& game) override;
 
 private:

@@ -1,7 +1,7 @@
 #include "Astra.h"
 #include "../game/Game.h"
 
-Astra::Astra() : Defender("Astra"), wrongBranchChance(0.25), random(std::random_device{}()) {}   // DRAFT: wrongBranchChance
+Astra::Astra() : Defender("Astra"), wrongBranchChance(0.25), random(std::random_device{}()) {}
 
 // Polymorphism: Astra's turn depends on the detection stage
 bool Astra::takeTurn(Game& game)
@@ -22,6 +22,7 @@ bool Astra::takeTurn(Game& game)
     if (game.detectionStage == "noticed")
     {
         location = randomNeighbour(location, nullptr);
+        game.say("Astra patrols " + location->path());   // DRAFT
         return true;
     }
 
@@ -47,6 +48,8 @@ bool Astra::takeTurn(Game& game)
         {
             location = rightStep;
         }
+
+        game.say("Astra moves to " + location->path());   // DRAFT
     }
 
     return true;
