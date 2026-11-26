@@ -133,6 +133,26 @@ public:
         return false;
     }
 
+    // Free every entry, the buckets stay and are all empty again
+    void clear()
+    {
+        for (int i = 0; i < bucketCount; i++)
+        {
+            Entry* current = buckets[i];
+
+            while (current != nullptr)
+            {
+                Entry* next = current->next;
+                delete current;
+                current = next;
+            }
+
+            buckets[i] = nullptr;
+        }
+
+        count = 0;
+    }
+
     // Entries per bucket
     double loadFactor() const
     {

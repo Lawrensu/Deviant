@@ -69,6 +69,7 @@ classDiagram
 
     World *-- DirectoryTree
     World *-- HashTable : combinations
+    World *-- SinglyLinkedList : fragments and barriers
     DirectoryTree *-- Directory
     Directory o-- File
     Directory o-- Barrier
@@ -105,11 +106,14 @@ classDiagram
     }
     class Fable {
         +Fragment* blockedFragment
+        -Directory* watching
         +takeTurn(game) bool
     }
     class Astra {
         +double wrongBranchChance
+        -mt19937 random
         +takeTurn(game) bool
+        -randomNeighbour(from, avoid) Directory*
     }
 
     Process <|-- Player
@@ -163,6 +167,7 @@ classDiagram
         +insert(key, value) void
         +find(key) V*
         +remove(key) bool
+        +clear() void
         +loadFactor() double
         +print() void
         -hash(key) int
@@ -175,7 +180,10 @@ classDiagram
     }
     class World {
         +HashTable~Barrier*~ combinations
+        +SinglyLinkedList~Fragment*~ fragments
+        +SinglyLinkedList~Barrier*~ barriers
         +buildAct(act) void
+        -clear() void
     }
     class SubmitChainCommand {
         +execute(game) void
@@ -218,6 +226,10 @@ classDiagram
     class Game {
         +SinglyLinkedList~Fragment*~ inventory
     }
+    class World {
+        +SinglyLinkedList~Fragment*~ fragments
+        +SinglyLinkedList~Barrier*~ barriers
+    }
     class OpenFileCommand
     class AddFragmentCommand
     class Renderer
@@ -227,6 +239,7 @@ classDiagram
     SinglyLinkedListNode o-- SinglyLinkedListNode : next
     SinglyLinkedList ..> SinglyLinkedListIterator : creates
     Game *-- SinglyLinkedList : inventory
+    World *-- SinglyLinkedList : owns fragments and barriers
     SinglyLinkedList o-- Fragment
     OpenFileCommand --> SinglyLinkedList : pushBack
     AddFragmentCommand --> SinglyLinkedList : remove
@@ -408,6 +421,7 @@ classDiagram
         +last() DoublyLinkedListIterator
     }
     class DirectoryTree {
+        +find(path) Directory*
         +begin() PreorderIterator
         +end() PreorderIterator
     }
@@ -432,7 +446,6 @@ classDiagram
     }
     class Renderer
     class Fable
-    class World
 
     SinglyLinkedList ..> SinglyLinkedListIterator : creates
     DoublyLinkedList ..> DoublyLinkedListIterator : creates
@@ -440,7 +453,7 @@ classDiagram
     Renderer --> SinglyLinkedListIterator : inventory
     Renderer --> DoublyLinkedListIterator : reveal
     Fable --> DoublyLinkedListIterator : history backward
-    World --> PreorderIterator : tree search
+    DirectoryTree --> PreorderIterator : find, tree search
 ```
 
 

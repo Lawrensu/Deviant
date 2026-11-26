@@ -166,7 +166,7 @@ Runtime folders, beside the executable:
 Roles:
 - Aggregate: `SinglyLinkedList`, `DoublyLinkedList`, `DirectoryTree`, each returns iterators through `begin()` and `end()`
 - Iterator: A nested `Iterator` class per structure, holding the current position and nothing else
-- Client: `Renderer` (inventory, history), `Fable` (history backward), the reveal (history forward), `World` (tree search)
+- Client: `Renderer` (inventory, history), `Fable` (history backward), the reveal (history forward), `DirectoryTree::find` (tree search)
 
 Each iterator offers the same operations, so every client walks every structure the same way:
 - `operator*`: The current value
@@ -317,6 +317,7 @@ public:
     void insert(const std::string& key, const V& value);
     V* find(const std::string& key);    // nullptr when missing
     bool remove(const std::string& key);
+    void clear();                       // frees every entry, used when the next act is built
     double loadFactor() const;
     void print() const;                 // demo only, every bucket and its chain
 private:
@@ -378,7 +379,12 @@ class World {
 public:
     DirectoryTree tree;
     HashTable<Barrier*> combinations;
+    SinglyLinkedList<Fragment*> fragments;  // owns every fragment of the act, wherever it is now
+    SinglyLinkedList<Barrier*> barriers;    // owns every barrier of the act
     void buildAct(int act);  // directories, files, fragments, barriers and combinations of one act
+private:
+    void clear();            // frees the last act before the next is built
+    void buildAct1();        // one builder per act
 };
 ```
 
@@ -404,16 +410,22 @@ public:
     bool catches(const Player& player) const;  // same directory
 };
 
+// Fable never moves, her location stays nullptr until the final battle
 class Fable : public Defender {
 public:
-    bool takeTurn(Game& game) override;     // blocks the last added fragment while the player is in her directory
+    bool takeTurn(Game& game) override;     // raises detection on entry, blocks the last added fragment while the player is in her directory
     Fragment* blockedFragment;
+private:
+    Directory* watching;                    // her directory the player was in last turn, to tell entering from staying
 };
 
 class Astra : public Defender {
 public:
     bool takeTurn(Game& game) override;     // idle, patrol or hunt by detection stage
     double wrongBranchChance;
+private:
+    std::mt19937 random;                    // <random>
+    Directory* randomNeighbour(Directory* from, Directory* avoid);  // parent or a child, for patrols and wrong branches
 };
 ```
 

@@ -79,6 +79,13 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="demo\Demo.cpp" />
+    <ClCompile Include="world\Directory.cpp" />
+    <ClCompile Include="world\World.cpp" />
+    <ClCompile Include="actors\Player.cpp" />
+    <ClCompile Include="actors\Defender.cpp" />
+    <ClCompile Include="actors\Fable.cpp" />
+    <ClCompile Include="actors\Astra.cpp" />
+    <ClCompile Include="game\Game.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="demo\Demo.h" />
@@ -87,6 +94,15 @@
     <ClInclude Include="structures\Stack.h" />
     <ClInclude Include="structures\Queue.h" />
     <ClInclude Include="structures\HashTable.h" />
+    <ClInclude Include="world\Item.h" />
+    <ClInclude Include="world\Directory.h" />
+    <ClInclude Include="world\World.h" />
+    <ClInclude Include="actors\Process.h" />
+    <ClInclude Include="actors\Player.h" />
+    <ClInclude Include="actors\Defender.h" />
+    <ClInclude Include="actors\Fable.h" />
+    <ClInclude Include="actors\Astra.h" />
+    <ClInclude Include="game\Game.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
