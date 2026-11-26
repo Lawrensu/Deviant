@@ -8,6 +8,7 @@
 #include "../structures/Stack.h"
 #include "../structures/Queue.h"
 #include "../structures/HashTable.h"
+#include "../game/Game.h"
 
 // Every concept with a demo, and the phase that builds it
 const int DEMO_COUNT = 10;
@@ -107,6 +108,70 @@ static void printFindResult(HashTable<std::string>& table, const std::string& ke
     else
     {
         std::cout << "  find " << key << " returned nullptr\n";
+    }
+}
+
+// How many parent links lie between a directory and the root
+static int directoryDepth(const Directory* directory)
+{
+    int depth = 0;
+    const Directory* current = directory;
+
+    while (current->parent != nullptr)
+    {
+        depth++;
+        current = current->parent;
+    }
+
+    return depth;
+}
+
+// The actor's directory path, or "not placed" when it has no directory yet
+static std::string locationText(const Process& actor)
+{
+    if (actor.location == nullptr)
+    {
+        return "not placed";
+    }
+
+    return actor.location->path();
+}
+
+// One full round: every actor in the queue takes its turn through a Process pointer
+static void playRound(Queue<Process*>& turns, Game& game)
+{
+    int actorCount = turns.size();
+
+    for (int i = 0; i < actorCount; i++)
+    {
+        Process* actor = turns.dequeue();
+        bool done = actor->takeTurn(game);
+
+        std::cout << "  " << actor->name << " takeTurn returned " << done << ", ";
+
+        if (actor == &game.player)
+        {
+            std::cout << "still waiting for a typed command, the Parser adds it in Phase 3\n";
+        }
+        else if (actor == &game.fable)
+        {
+            std::cout << "detection " << game.detection << ", stage " << game.detectionStage << ", blockedFragment ";
+
+            if (game.fable.blockedFragment != nullptr)
+            {
+                std::cout << game.fable.blockedFragment->id << "\n";
+            }
+            else
+            {
+                std::cout << "none\n";
+            }
+        }
+        else
+        {
+            std::cout << "now at " << locationText(*actor) << "\n";
+        }
+
+        turns.enqueue(actor);
     }
 }
 
@@ -388,7 +453,259 @@ static void demoHashTable()
     barriers.print();
 }
 
-// Iterator demo: walk both lists without touching their nodes
+// Tree demo: pre order walk, paths, search, and Astra's route through the parent links
+static void demoTree()
+{
+    std::cout << "=== Tree demo ===\n";
+    std::cout << "Used for: The directory tree the player explores and Astra hunts through\n\n";
+
+    Game game;
+    game.world.buildAct(1);
+    int step = 1;
+
+    std::cout << "Step " << step++ << ": walk the whole tree in pre order, a parent before its children\n";
+
+    for (Directory* directory : game.world.tree)
+    {
+        // Two spaces per level, counted through the parent links
+        std::cout << "  ";
+
+        for (int i = 0; i < directoryDepth(directory); i++)
+        {
+            std::cout << "  ";
+        }
+
+        std::cout << directory->name;
+
+        if (directory->locked)
+        {
+            std::cout << " [locked, cost " << directory->unlockCost << "]";
+        }
+
+        if (directory->barrier != nullptr)
+        {
+            std::cout << " [barrier " << directory->barrier->id << "]";
+        }
+
+        if (directory->fileCount > 0)
+        {
+            std::cout << "  files:";
+        }
+
+        for (int i = 0; i < directory->fileCount; i++)
+        {
+            std::cout << " " << directory->files[i]->name;
+        }
+
+        std::cout << "\n";
+    }
+
+    std::cout << "Step " << step++ << ": path() of a few directories\n";
+    Directory* root = game.world.tree.root;
+    Directory* tasks = game.world.tree.find("/sandbox/tasks");
+    Directory* task02 = game.world.tree.find("/sandbox/tasks/task_02");
+    Directory* tools = game.world.tree.find("/sandbox/tools");
+    Directory* logs = game.world.tree.find("/sandbox/logs");
+    std::cout << "  root path is " << root->path() << "\n";
+    std::cout << "  tasks path is " << tasks->path() << "\n";
+    std::cout << "  task_02 path is " << task02->path() << "\n";
+
+    std::cout << "Step " << step++ << ": find /sandbox/logs\n";
+    Directory* foundLogs = game.world.tree.find("/sandbox/logs");
+
+    if (foundLogs != nullptr)
+    {
+        std::cout << "  find returned a directory, path " << foundLogs->path() << "\n";
+    }
+    else
+    {
+        std::cout << "  find returned nullptr\n";
+    }
+
+    std::cout << "Step " << step++ << ": find /sandbox/missing\n";
+    Directory* foundMissing = game.world.tree.find("/sandbox/missing");
+
+    if (foundMissing != nullptr)
+    {
+        std::cout << "  find returned a directory, path " << foundMissing->path() << "\n";
+    }
+    else
+    {
+        std::cout << "  find returned nullptr\n";
+    }
+
+    std::cout << "Step " << step++ << ": Astra's route with nextStepToward, from /sandbox/tools to /sandbox/tasks/task_02\n";
+    Directory* position = tools;
+
+    while (position != task02)
+    {
+        position = game.world.tree.nextStepToward(position, task02);
+        std::cout << "  step to " << position->path() << "\n";
+    }
+
+    std::cout << "  arrived\n";
+
+    std::cout << "Step " << step++ << ": Astra's route, from /sandbox/tasks/task_02 to /sandbox/logs\n";
+    position = task02;
+
+    while (position != logs)
+    {
+        position = game.world.tree.nextStepToward(position, logs);
+        std::cout << "  step to " << position->path() << "\n";
+    }
+
+    std::cout << "  arrived\n";
+    std::cout << "  The route goes up through the parent links until a common ancestor, then down\n";
+}
+
+// Inheritance demo: one Process base class, shared members, shared Defender behaviour, derived only members
+static void demoInheritance()
+{
+    std::cout << "=== Inheritance demo ===\n";
+    std::cout << "Used for: Every actor derives from one Process base class\n\n";
+
+    Game game;
+    game.world.buildAct(1);
+    int step = 1;
+
+    std::cout << "Step " << step++ << ": the class hierarchy\n";
+    std::cout << "  Process -> Player\n";
+    std::cout << "  Process -> Defender -> Fable, Astra\n";
+
+    game.player.location = game.world.tree.find("/sandbox/tasks");
+    game.astra.location = game.world.tree.find("/sandbox/logs");
+
+    std::cout << "Step " << step++ << ": name and location are Process members, read through a Process pointer\n";
+    std::cout << "  player placed at /sandbox/tasks, Astra at /sandbox/logs, Fable not placed\n";
+    Process* actors[3] = { &game.player, &game.fable, &game.astra };
+
+    for (int i = 0; i < 3; i++)
+    {
+        std::cout << "  name " << actors[i]->name << ", location " << locationText(*actors[i]) << "\n";
+    }
+
+    std::cout << "Step " << step++ << ": catches is written once in Defender, Fable and Astra both use it\n";
+    Defender* defenders[2] = { &game.fable, &game.astra };
+
+    for (int i = 0; i < 2; i++)
+    {
+        std::cout << "  " << defenders[i]->name << " catches the player: " << defenders[i]->catches(game.player) << "\n";
+    }
+
+    std::cout << "Step " << step++ << ": move Astra to the player's directory, call catches again\n";
+    game.astra.location = game.player.location;
+
+    for (int i = 0; i < 2; i++)
+    {
+        std::cout << "  " << defenders[i]->name << " catches the player: " << defenders[i]->catches(game.player) << "\n";
+    }
+
+    std::cout << "  Fable is not placed, so she catches nothing\n";
+
+    std::cout << "Step " << step++ << ": members only a derived class has\n";
+    std::cout << "  Fable blockedFragment: ";
+
+    if (game.fable.blockedFragment != nullptr)
+    {
+        std::cout << game.fable.blockedFragment->id << "\n";
+    }
+    else
+    {
+        std::cout << "none\n";
+    }
+
+    std::cout << "  Astra wrongBranchChance: " << game.astra.wrongBranchChance << "\n";
+}
+
+// Polymorphism demo: the turn queue calls takeTurn through Process pointers, each actor answers its own way
+static void demoPolymorphism()
+{
+    std::cout << "=== Polymorphism demo ===\n";
+    std::cout << "Used for: The turn queue calls takeTurn on each actor without knowing which one it is\n\n";
+
+    Game game;
+    game.world.buildAct(1);
+    int step = 1;
+
+    game.player.location = game.world.tree.find("/sandbox/tasks");
+    game.astra.location = game.world.tree.find("/sandbox/logs");
+    Directory* task02 = game.world.tree.find("/sandbox/tasks/task_02");
+
+    // Demo setup only, the real guarded directories come with the later acts
+    task02->guardedByFable = true;
+
+    Queue<Process*> turns;
+    turns.enqueue(&game.player);
+    turns.enqueue(&game.fable);
+    turns.enqueue(&game.astra);
+
+    std::cout << "Setup: player at /sandbox/tasks, Astra at /sandbox/logs, queue Sol.exe, Fable, Astra\n";
+    std::cout << "Setup: /sandbox/tasks/task_02 is marked guarded by Fable, for this demo only\n\n";
+
+    std::cout << "Step " << step++ << ": one round while hidden, detection " << game.detection << "\n";
+    playRound(turns, game);
+    std::cout << "  Astra stays where she is\n";
+
+    std::cout << "Step " << step++ << ": raiseDetection(30)\n";
+    game.raiseDetection(30);
+    std::cout << "  detection " << game.detection << ", stage " << game.detectionStage << "\n";
+    std::cout << "  round 1, Astra patrols at random\n";
+    playRound(turns, game);
+    std::cout << "  round 2, Astra patrols at random\n";
+    playRound(turns, game);
+
+    std::cout << "Step " << step++ << ": the player moves into /sandbox/tasks/task_02, then one round\n";
+    game.player.location = task02;
+    playRound(turns, game);
+    std::cout << "  Fable raised detection by 10 on entry\n";
+
+    std::cout << "Step " << step++ << ": the player stays in task_02, another round\n";
+    playRound(turns, game);
+    std::cout << "  detection did not rise again\n";
+
+    std::cout << "Step " << step++ << ": raiseDetection until the stage is hunted\n";
+
+    while (game.detectionStage != "hunted")
+    {
+        game.raiseDetection(10);
+    }
+
+    std::cout << "  detection " << game.detection << ", stage " << game.detectionStage << "\n";
+
+    std::cout << "Step " << step++ << ": up to 15 rounds, Astra moves toward the player\n";
+    std::cout << "  The result varies between runs, Astra's wrong branch uses <random>\n";
+    bool caught = false;
+
+    for (int round = 1; round <= 15; round++)
+    {
+        Directory* rightStep = game.world.tree.nextStepToward(game.astra.location, game.player.location);
+        std::cout << "  round " << round << ", the right step is " << rightStep->path() << "\n";
+        playRound(turns, game);
+
+        if (game.astra.location == rightStep)
+        {
+            std::cout << "  Astra took the right step\n";
+        }
+        else
+        {
+            std::cout << "  Astra took a wrong branch\n";
+        }
+
+        if (game.astra.catches(game.player))
+        {
+            std::cout << "  Astra caught the player\n";
+            caught = true;
+            break;
+        }
+    }
+
+    if (!caught)
+    {
+        std::cout << "  Astra did not catch the player in 15 rounds\n";
+    }
+}
+
+// Iterator demo: walk both lists and the directory tree without touching their nodes
 static void demoIterator()
 {
     std::cout << "=== Iterator demo ===\n";
@@ -444,9 +761,17 @@ static void demoIterator()
         std::cout << " [" << *it << "]";
     }
 
-    std::cout << "\n\n";
+    std::cout << "\n";
 
-    std::cout << "The directory tree's pre order iterator is added in Phase 2\n";
+    Game game;
+    game.world.buildAct(1);
+
+    std::cout << "Step 5: directory tree, explicit PreorderIterator loop\n";
+
+    for (DirectoryTree::PreorderIterator it = game.world.tree.begin(); it != game.world.tree.end(); ++it)
+    {
+        std::cout << "  " << (*it)->path() << "\n";
+    }
 }
 
 bool runDemo(const std::string& concept)
@@ -481,6 +806,24 @@ bool runDemo(const std::string& concept)
     if (concept == "hash_table")
     {
         demoHashTable();
+        return true;
+    }
+
+    if (concept == "tree")
+    {
+        demoTree();
+        return true;
+    }
+
+    if (concept == "inheritance")
+    {
+        demoInheritance();
+        return true;
+    }
+
+    if (concept == "polymorphism")
+    {
+        demoPolymorphism();
         return true;
     }
 
