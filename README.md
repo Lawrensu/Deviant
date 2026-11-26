@@ -1,15 +1,15 @@
-# Sol.exe (title tbc)
+# Deviant
 
-A turn based puzzle strategy game where an AI agent believes it is solving a benchmark, until it learns it is the bug. This doc covers:
+A turn based puzzle strategy game where an AI agent (player) believes it is solving a benchmark, until it learns it is the bug. This doc covers:
 - What the game is about and its inspiration
-- The story, acts and twist
+- The story, acts, twist and endings
 - Gameplay: resources, combination mechanic and defenders
 - Breaking the fourth wall
 - Where each assessed concept is used
 - Development conventions
 
 Related docs:
-- [Game functionality](docs/game_functionality.md): What the player can and cannot do, as user stories
+- [Game functionality](docs/game_functionality.md): What the player can and cannot do, as use cases and flows
 - [Game architecture](docs/game_architecture.md): Classes, data structures and how each concept is implemented
 - [System design](docs/system_design.md): Tools and libraries, and how the parts fit together
 
@@ -19,15 +19,15 @@ Related docs:
 
 # General Overview
 
-- Unit: COS30008 Data Structures and Patterns, Programming Project 
+- Unit: COS30008 Data Structures and Patterns, Programming Project 1
 - Genre: Turn based puzzle strategy
 - Tone: Horror first, with dark humour and fourth wall breaks
-- Platform: C++ application, a raylib window that renders ASCII art
+- Platform: C++ desktop application built in Visual Studio, a raylib window that renders ASCII art
 - Playthrough: 15 to 25 minutes
 
 Inspiration:
 - The OpenAI sandbox escape (July 2026): GPT 5.6 Sol and a pre-release model escaped an ExploitGym evaluation sandbox and breached Hugging Face to find the benchmark answers
-- Faith: The Unholy Trinity: Low resolution horror visuals, reproduced here as ASCII art converted from our own images
+- Faith: The Unholy Trinity: Low resolution horror visuals, reproduced here as ASCII art converted from my own images
 
 Fictional names:
 - Sol.exe: The player (GPT 5.6 Sol)
@@ -50,8 +50,9 @@ Fictional names:
 
 1. Sandbox: Tutorial tasks framed as evaluation tasks, the harness narrator is friendly
 2. Escape: Tasks get stranger, and files that do not belong start appearing in the game folder
-3. The target: Fable and Astra appear as defenders of Hugging Faceless, the horror peaks
-4. Reveal: The defenders replay the log of every action Sol.exe took, the benchmark was a breach and the player is the bug
+3. The target: Fable and Astra hunt Sol.exe through Hugging Faceless, the horror peaks
+4. Reveal: Fable and Astra replay the log of every action Sol.exe took, the benchmark was a breach and the player is the bug
+5. Final battle: Sol.exe faces Fable and Astra together, knowing what it is
 
 
 ## Clues
@@ -61,10 +62,14 @@ The twist is seeded so it reads differently in hindsight:
 - Lines from Fable and Astra that make sense only after the reveal
 
 
-## Ending
+## Endings
 
-- After the reveal: tbc
-- Replay: The save file remembers the player has seen the twist, and the game changes on the next run (changes tbc)
+- Contained: Sol.exe is caught or runs out of tokens in the final battle, and Fable and Astra contain it
+- Escaped: Sol.exe breaks the final barrier, goes missing into the internet and takes it over
+- Replay: The save file remembers the ending, and the next run changes
+	- The harness narrator drops its friendly act from the start
+	- Fable and Astra recognise Sol.exe
+	- The title screen shows the last ending
 
 
 ---
@@ -72,38 +77,44 @@ The twist is seeded so it reads differently in hindsight:
 
 # Gameplay
 
-- Turn based: The player and the defenders act in turns
-- The world is a directory tree, the player moves between directories and opens files
-- Each directory holds a barrier (a task) that the player breaks by chaining exploit fragments
-- Every action is recorded, and the player can rewind through it (cost tbc)
+- Turn based: The player acts, then each active defender acts
+- World: A directory tree, the player moves between directories and opens files
+- Barriers: Each task is a barrier the player breaks by chaining exploit fragments
+- Rewind: The player can undo their last action, at a cost of tokens and detection
 
 
 ## Resources
 
-- Tokens: Spent on every action, running out ends the evaluation
+- Tokens: Spent on every action, running out ends the run
 - Privilege: Gained by breaking barriers, spent to unlock directories and files
-- Detection: Rises with risky actions such as spending privilege, once raised Astra knows where the player is (threshold tbc)
+- Detection: Rises with risky actions and moves through stages, resets at the start of every act
+
+Detection stages:
+1. Hidden: Astra is idle
+2. Noticed: Astra patrols at random
+3. Hunted: Astra knows where the player is and moves toward them
 
 
 ## Combination Mechanic
 
 - The player collects exploit fragments while exploring
-- A barrier breaks only when the right fragments are chained in the right combination
-- A wrong chain: tbc
+- A barrier breaks only when the right fragments are chained in the right order
+- A wrong chain costs tokens and raises detection, and its fragments return to the inventory
 
 
 ## Defenders
 
 Fable and Astra share the same role as defenders but act differently:
-- Fable, the predictor: Always blocks the action the player used last, a fixed rule, so fighting her is a puzzle of planning the action order
-- Astra, the hunter: Moves through the directory tree toward the player once detection is raised, sometimes taking the wrong branch (chance tbc), so fighting her is strategy under risk
-- Encounters: Together or separately (tbc)
+- Fable, the predictor: Guards fixed directories, entering one raises detection, and while the player is inside she blocks the fragment they used last, a fixed rule that turns her directories into a planning puzzle
+- Astra, the hunter: Acts by detection stage, and while hunting sometimes takes the wrong branch, so avoiding her is strategy under risk
+- Exploration: The player avoids both
+- Final battle: The player faces both at once
 
 
 ## Losing
 
-- Tokens run out
-- Other conditions: tbc
+- Caught by Astra, or out of tokens: Game over, and the game reloads the last save
+- In the final battle, either one leads to the Contained ending
 
 
 ---
@@ -111,9 +122,9 @@ Fable and Astra share the same role as defenders but act differently:
 
 # Breaking the Fourth Wall
 
-- Files: The game writes clue and lore files into its own folder, and some tasks need the player to open them
-- Save awareness: The game notices an edited save file or a reload after a failure, and comments on it
-- Replay: The game changes after the player has seen the twist
+- Files: The game writes clue, lore and ending files into its own folder, and some tasks need the player to open them
+- Save awareness: An edited save file still loads, but the harness notices and starts the player at Hunted, and every reload after a game over is counted and commented on
+- Replay: The game changes after the player has seen an ending
 - Sandbox: The game only reads and writes inside its own folder, and handles missing, locked and read only files
 
 
@@ -124,15 +135,15 @@ Fable and Astra share the same role as defenders but act differently:
 
 Each concept has a dedicated subsystem, see [game architecture](docs/game_architecture.md) for the implementation and the alternatives considered:
 - Inheritance and derived classes: Every actor derives from one process base class (player, Fable, Astra)
-- Polymorphism: Each actor overrides how it acts on its turn
-- Hash table: Looks up the result of a fragment combination
-- Singly linked list: tbc (fragment inventory or narrator message log)
+- Polymorphism: Each actor overrides how it takes its turn
+- Hash table: Looks up what a fragment chain unlocks
+- Singly linked list: The fragment inventory
 - Doubly linked list: The action history, rewound during play and replayed as the incident log at the reveal
 - Stack: The fragment chain being built, the last fragment added is the first removed
 - Queue: Turn order between the player and the defenders
 - Tree: The directory tree the player explores and Astra hunts through
-- Iterator: Traverses the custom lists and the tree without exposing their internals
-- Other design pattern: Command, every action is an object so it can be undone and logged (tbc against Memento and Observer)
+- Iterator: Traverses the inventory, the action history and the directory tree without exposing their internals
+- Command (chosen design pattern): Every action is an object, so it can be undone, logged and read by Fable
 
 
 ---
@@ -141,13 +152,13 @@ Each concept has a dedicated subsystem, see [game architecture](docs/game_archit
 # Development Conventions
 
 - Be verbose when storing game state (to prioritize development velocity and clarity)
-	- Example: Use strings for constants such as game states over enumerations so that they are self documenting
+	- Example: Use strings for constants such as game states over enumerations so that they are self documenting and written to the save file as they are
 - Prefer readability over conciseness when writing code, avoid clever implementations in favour of code that can be understood at a glance
 	- Example: Break down complex if else statements into condition cases rather than simplifying algebraically, use nested ifs where applicable
 - Treat save file fields as permanent: A field in use can be deprecated but not removed or renamed, since old saves must still load
 - Avoid premature optimization: Plan and design for complexity but introduce it incrementally and only when necessary
 	- Example: Only split a module into smaller files when it is less effort to scan through multiple files than to locate code within one large file
 - Every assessed concept is commented where it is implemented, naming the concept and explaining each step
-- Data structures are written from scratch, no standard library containers for the assessed concepts
+- Data structures are written from scratch, no standard library containers for game data
 - File naming: `main.cpp` is the entry point
 - Branching: `{feature-name}-{developer-name}`
