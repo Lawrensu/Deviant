@@ -55,6 +55,11 @@
       <AdditionalLibraryDirectories>$(ProjectDir)vendor\raylib\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>raylib.lib;opengl32.lib;gdi32.lib;winmm.lib;user32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <!-- The game reads its images, fonts and audio from assets/ beside the executable -->
+    <PostBuildEvent>
+      <Command>xcopy "$(ProjectDir)assets" "$(OutDir)assets\" /E /I /Y /Q</Command>
+      <Message>Copy assets beside the executable</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -88,6 +93,8 @@
     <ClCompile Include="game\Game.cpp" />
     <ClCompile Include="game\Save.cpp" />
     <ClCompile Include="game\Sandbox.cpp" />
+    <ClCompile Include="render\AsciiArt.cpp" />
+    <ClCompile Include="render\Renderer.cpp" />
     <ClCompile Include="commands\Commands.cpp" />
     <ClCompile Include="commands\Parser.cpp" />
   </ItemGroup>
@@ -109,6 +116,8 @@
     <ClInclude Include="game\Game.h" />
     <ClInclude Include="game\Save.h" />
     <ClInclude Include="game\Sandbox.h" />
+    <ClInclude Include="render\AsciiArt.h" />
+    <ClInclude Include="render\Renderer.h" />
     <ClInclude Include="commands\Command.h" />
     <ClInclude Include="commands\Commands.h" />
     <ClInclude Include="commands\Parser.h" />

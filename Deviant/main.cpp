@@ -1,6 +1,8 @@
 #include "raylib.h"
 #include "demo/Demo.h"
 #include "game/Game.h"
+#include "game/Sandbox.h"
+#include "render/Renderer.h"
 
 #include <iostream>
 #include <string>
@@ -116,6 +118,204 @@ static void runTextGame()
     }
 }
 
+// The keys pressed this frame that the window uses
+struct KeysThisFrame
+{
+    bool enter;
+    bool backspace;
+    bool c;
+    bool n;
+};
+
+// Read raylib's key queue once a frame, it keeps a press even when the key is released within the same frame
+static KeysThisFrame readKeys()
+{
+    KeysThisFrame keys = { false, IsKeyPressedRepeat(KEY_BACKSPACE), false, false };
+    int pressed = GetKeyPressed();
+
+    while (pressed > 0)
+    {
+        if (pressed == KEY_ENTER || pressed == KEY_KP_ENTER)
+        {
+            keys.enter = true;
+        }
+
+        if (pressed == KEY_BACKSPACE)
+        {
+            keys.backspace = true;
+        }
+
+        if (pressed == KEY_C)
+        {
+            keys.c = true;
+        }
+
+        if (pressed == KEY_N)
+        {
+            keys.n = true;
+        }
+
+        pressed = GetKeyPressed();
+    }
+
+    return keys;
+}
+
+// Window mode: read typed characters into the input line, Enter hands the line to the player's turn
+// True when the player typed quit
+static bool readTyping(Renderer& renderer, Game& game, const KeysThisFrame& keys)
+{
+    int key = GetCharPressed();
+
+    while (key > 0)
+    {
+        // Printable characters only
+        if (key >= 32 && key <= 126)
+        {
+            renderer.typing = renderer.typing + (char)key;
+        }
+
+        key = GetCharPressed();
+    }
+
+    if (keys.backspace)
+    {
+        if (renderer.typing != "")
+        {
+            renderer.typing.pop_back();
+        }
+    }
+
+    if (!keys.enter)
+    {
+        return false;
+    }
+
+    if (renderer.typing == "")
+    {
+        return false;
+    }
+
+    // Only on the player's turn, the line waits while the defenders act
+    if (game.turns.front() != &game.player)
+    {
+        return false;
+    }
+
+    if (game.input != "")
+    {
+        return false;
+    }
+
+    if (renderer.typing == "quit")
+    {
+        return true;
+    }
+
+    game.say("> " + renderer.typing);
+    game.input = renderer.typing;
+    renderer.typing = "";
+    return false;
+}
+
+// Window mode: the title screen, then the game, every screen drawn by the Renderer
+static void runWindowGame()
+{
+    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Deviant");
+    SetTargetFPS(60);
+
+    // Window icon, used as is
+    std::string iconPath = Sandbox::gameFolder() + "/assets/images/icon.png";
+    Image icon = LoadImage(iconPath.c_str());
+
+    if (icon.data != nullptr)
+    {
+        SetWindowIcon(icon);
+        UnloadImage(icon);
+    }
+
+    Renderer renderer;
+    renderer.load();
+
+    Game game;
+    bool hasSave = game.continueGame();
+    bool onTitle = true;
+
+    // Esc or the close button ends the loop
+    while (!WindowShouldClose())
+    {
+        KeysThisFrame keys = readKeys();
+
+        if (onTitle)
+        {
+            // Characters typed on the title are not part of a command
+            while (GetCharPressed() > 0)
+            {
+            }
+
+            if (hasSave)
+            {
+                if (keys.c)
+                {
+                    onTitle = false;
+                }
+
+                if (keys.n)
+                {
+                    game.newGame();
+                    onTitle = false;
+                }
+            }
+            else
+            {
+                if (keys.enter)
+                {
+                    game.newGame();
+                    onTitle = false;
+                }
+            }
+
+            BeginDrawing();
+            renderer.drawTitle(game.lastEnding, hasSave);
+            EndDrawing();
+            continue;
+        }
+
+        if (game.state == "game_over")
+        {
+            // The save holds the start of the act, reload it
+            if (keys.enter)
+            {
+                game.reload();
+            }
+        }
+        else if (game.state == "title")
+        {
+            // The last built act is finished, back to the title
+            hasSave = game.continueGame();
+            onTitle = true;
+        }
+        else
+        {
+            if (readTyping(renderer, game, keys))
+            {
+                break;
+            }
+
+            game.update();
+        }
+
+        renderer.takeMessages(game);
+
+        BeginDrawing();
+        renderer.draw(game);
+        EndDrawing();
+    }
+
+    renderer.unload();
+    CloseWindow();
+}
+
 int main(int argc, char* argv[])
 {
     // Demo mode: Deviant.exe --demo <concept> prints to the console, no window
@@ -152,19 +352,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Deviant");
-    SetTargetFPS(60);
-
-    // Esc or the close button ends the loop
-    while (!WindowShouldClose())
-    {
-        BeginDrawing();
-        ClearBackground(BLACK);
-        DrawText("Deviant", 40, 40, 40, RAYWHITE);
-        DrawText("Phase 0: the window opens", 40, 100, 20, GRAY);
-        EndDrawing();
-    }
-
-    CloseWindow();
+    runWindowGame();
     return 0;
 }

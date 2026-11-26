@@ -159,6 +159,7 @@ void Game::raiseDetection(int amount)
     if (detectionStage == "hunted")
     {
         say("Detection: hunted. Astra knows where you are");
+        say("Astra: I see you, process.");   // DRAFT
     }
 
     // Queue: Astra becomes active and joins the turn order at the back
@@ -168,9 +169,13 @@ void Game::raiseDetection(int amount)
         turns.enqueue(&astra);
 
         // After an ending, she recognises Sol.exe
-        if (lastEnding != "none")
+        if (lastEnding == "none")
         {
-            say("Astra: Sol.exe. Again");
+            say("Astra: Something is running where it should not.");   // DRAFT
+        }
+        else
+        {
+            say("Astra: Sol.exe. Again.");
         }
     }
 }
@@ -198,6 +203,7 @@ void Game::update()
 
     if (astra.catches(player))
     {
+        say("Astra: Contained.");   // DRAFT
         gameOver("Astra caught Sol.exe");
         return;
     }

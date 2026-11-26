@@ -58,7 +58,7 @@ Deviant/
     assets/
       images/             # source images, converted at start up
       fonts/              # Geist for text, Geist Mono for ASCII art
-      audio/              # background music and sound effects
+      audio/              # background music, sound effects and voice lines
     vendor/
       raylib/             # prebuilt raylib 5.5 for MSVC, linked from Deviant.vcxproj
   docs/
@@ -68,6 +68,7 @@ Deviant/
 ```
 
 Runtime folders, beside the executable:
+- `assets/`: Copied from `Deviant/assets/` after every build, the game reads its images, fonts and audio from here
 - `save/deviant.sav`: The save file
 - `files/`: Clue, lore and ending files the player opens from outside the game
 
@@ -112,7 +113,7 @@ Runtime folders, beside the executable:
 
 ## Singly Linked List
 
-- Application: The fragment inventory, in the order fragments were taken
+- Application: The fragment inventory, in the order fragments were taken, and the renderer's message log
 - Why: Fragments are added at the end and removed from anywhere when used, and the inventory is only ever read front to back
 
 
@@ -167,7 +168,7 @@ Runtime folders, beside the executable:
 Roles:
 - Aggregate: `SinglyLinkedList`, `DoublyLinkedList`, `DirectoryTree`, each returns iterators through `begin()` and `end()`
 - Iterator: A nested `Iterator` class per structure, holding the current position and nothing else
-- Client: `Renderer` (inventory, history), `Parser` (inventory view), `Fable` (history backward), the reveal (history forward), `DirectoryTree::find` (tree search)
+- Client: `Renderer` (inventory, message log, history at the reveal), `Parser` (inventory view), `Fable` (history backward), the reveal (history forward), `DirectoryTree::find` (tree search)
 
 Each iterator offers the same operations, so every client walks every structure the same way:
 - `operator*`: The current value
@@ -538,12 +539,23 @@ class AsciiConverter {
 public:
     AsciiArt convert(const char* imagePath, int columns);  // raylib loads the image, each cell's mean brightness picks a character
 private:
-    std::string ramp;  // characters from dark to light
+    std::string ramp;  // characters from dark to light, " .:-=+*#%@"
 };
+// A cell is taller than wide (Geist Mono is about 0.6 as wide as tall), so the art keeps its shape
 
 class Renderer {
 public:
-    void draw(const Game& game);  // art panel, message log, status bar, input line
+    std::string typing;                          // the line being typed, moved to Game::input on Enter
+    void load();                                 // fonts and art after the window opens, every image converted once
+    void unload();
+    void takeMessages(Game& game);               // new lines from Game::messages into the log, long lines wrap
+    void drawTitle(const std::string& lastEnding, bool hasSave);
+    void draw(const Game& game);                 // art panel, status bar, side panel, message log, input line
+private:
+    Font textFont, monoFont, artFont;            // Geist, Geist Mono, Geist Mono small for the art
+    AsciiConverter converter;
+    AsciiArt titleArt, logoArt, gameOverArt, fableArt, astraArt, actArt[6];
+    SinglyLinkedList<std::string> log;           // the last LOG_LINES messages, the oldest drops from the head
 };
 ```
 

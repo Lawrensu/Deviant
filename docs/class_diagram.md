@@ -245,7 +245,8 @@ classDiagram
     SinglyLinkedList o-- Fragment
     OpenFileCommand --> SinglyLinkedList : pushBack
     AddFragmentCommand --> SinglyLinkedList : remove
-    Renderer ..> SinglyLinkedListIterator : lists the inventory
+    Renderer ..> SinglyLinkedListIterator : lists the inventory and the log
+    Renderer *-- SinglyLinkedList : message log
 ```
 
 
@@ -454,7 +455,7 @@ classDiagram
     SinglyLinkedList ..> SinglyLinkedListIterator : creates
     DoublyLinkedList ..> DoublyLinkedListIterator : creates
     DirectoryTree ..> PreorderIterator : creates
-    Renderer --> SinglyLinkedListIterator : inventory
+    Renderer --> SinglyLinkedListIterator : inventory and message log
     Renderer --> DoublyLinkedListIterator : reveal
     Fable --> DoublyLinkedListIterator : history backward
     DirectoryTree --> PreorderIterator : find, tree search

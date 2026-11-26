@@ -75,7 +75,10 @@ The player cannot:
 
 - Title
 	- Show the last ending
-	- If there is a save: The player picks continue or new
+	- If there is a save: The player picks continue (C) or new (N), else Enter starts a new game
+- Window
+	- The player types a command, Enter hands it to their turn, Esc or quit closes the game
+	- After a game over, Enter reloads
 - New game
 	- Start Act 1 at the root directory, with the starting tokens and privilege, at Hidden
 	- Create the save file, the last ending and the reload count carry over from the last run

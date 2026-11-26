@@ -25,9 +25,13 @@ bool Fable::takeTurn(Game& game)
         game.say("Fable guards this directory");
 
         // After an ending, she recognises Sol.exe
-        if (game.lastEnding != "none")
+        if (game.lastEnding == "none")
         {
-            game.say("Fable: I know this process");
+            game.say("Fable: You always come this way.");   // DRAFT
+        }
+        else
+        {
+            game.say("Fable: I know this process.");
         }
 
         game.raiseDetection(FABLE_ENTRY_DETECTION);
@@ -52,6 +56,7 @@ bool Fable::takeTurn(Game& game)
     if (lastAdded != nullptr && lastAdded != blockedFragment)
     {
         game.say("Fable blocks " + lastAdded->id + " " + lastAdded->name);
+        game.say("Fable: Not that one. I watched you use it.");   // DRAFT
     }
 
     blockedFragment = lastAdded;
