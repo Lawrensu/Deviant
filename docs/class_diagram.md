@@ -77,8 +77,9 @@ classDiagram
 
     Parser ..> Command : creates
     Game --> Command : performs
-    Game --> Save
-    Game --> Sandbox
+    Game *-- Save
+    Game *-- Sandbox
+    Save ..> Sandbox : gameFolder
     Renderer --> Game : draws
     Renderer --> AsciiConverter
 ```

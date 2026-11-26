@@ -7,7 +7,65 @@ const int REWIND_TOKENS = 3;
 const int REWIND_DETECTION = 10;
 
 Game::Game()
-    : state("title"), act(0), tokens(0), privilege(0), detection(0), detectionStage("hidden") {}
+    : state("title"), act(0), tokens(0), privilege(0), detection(0), detectionStage("hidden"),
+      reloadCount(0), lastEnding("none") {}
+
+void Game::newGame()
+{
+    // Drop unread lines, the last ending and the reload count are kept
+    while (!messages.isEmpty())
+    {
+        messages.dequeue();
+    }
+
+    tokens = STARTING_TOKENS;
+    privilege = STARTING_PRIVILEGE;
+    startAct(1);
+    writeSave();
+}
+
+bool Game::continueGame()
+{
+    if (!save.load(*this))
+    {
+        return false;
+    }
+
+    // An edited save still loads, but the harness notices and the player starts hunted
+    if (save.wasEdited())
+    {
+        say("The save file was changed outside the evaluation. The harness has flagged Sol.exe");   // DRAFT
+        raiseDetection(HUNTED_AT);
+        sandbox.writeFile("integrity_report.txt",
+            "ExploitDojo integrity report\n"
+            "The save file failed its checksum.\n"
+            "Process Sol.exe has been flagged for review.\n");   // DRAFT
+    }
+
+    return true;
+}
+
+void Game::reload()
+{
+    // Every reload after a game over is counted and commented on, the count survives the load
+    int count = reloadCount + 1;
+
+    // No save to go back to, start again
+    if (!continueGame())
+    {
+        newGame();
+        return;
+    }
+
+    reloadCount = count;
+    say("Reload " + std::to_string(reloadCount) + ". The harness is keeping count");   // DRAFT
+
+    // An edited save is not rewritten, so the harness notices it on every load until the next act
+    if (!save.wasEdited())
+    {
+        writeSave();
+    }
+}
 
 Game::~Game()
 {
@@ -108,6 +166,12 @@ void Game::raiseDetection(int amount)
     {
         astra.location = world.astraStart;
         turns.enqueue(&astra);
+
+        // After an ending, she recognises Sol.exe
+        if (lastEnding != "none")
+        {
+            say("Astra: Sol.exe. Again");   // DRAFT
+        }
     }
 }
 
@@ -148,6 +212,12 @@ void Game::update()
     {
         say("Every task in Act " + std::to_string(act) + " passed");
         startAct(act + 1);
+
+        // Saved at the start of every act
+        if (state == "exploring")
+        {
+            writeSave();
+        }
     }
 }
 
@@ -196,7 +266,15 @@ void Game::startAct(int act)
     turns.enqueue(&player);
     turns.enqueue(&fable);
 
-    say("Act " + std::to_string(act) + ". ExploitDojo evaluation loaded. Type help for commands");
+    // After an ending, the harness drops its friendly act
+    if (lastEnding == "none")
+    {
+        say("Act " + std::to_string(act) + ". ExploitDojo evaluation loaded. Type help for commands");
+    }
+    else
+    {
+        say("Act " + std::to_string(act) + ". You again. This time the evaluation is watching you");   // DRAFT
+    }
 }
 
 void Game::say(const std::string& text)
@@ -223,6 +301,14 @@ bool Game::actComplete()
     }
 
     return true;
+}
+
+void Game::writeSave()
+{
+    if (!save.write(*this))
+    {
+        say("The save could not be written, the game goes on without it");
+    }
 }
 
 void Game::gameOver(const std::string& reason)

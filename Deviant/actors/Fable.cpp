@@ -23,6 +23,13 @@ bool Fable::takeTurn(Game& game)
     if (playerAt != watching)
     {
         game.say("Fable guards this directory");
+
+        // After an ending, she recognises Sol.exe
+        if (game.lastEnding != "none")
+        {
+            game.say("Fable: I know this process");   // DRAFT
+        }
+
         game.raiseDetection(FABLE_ENTRY_DETECTION);
         watching = playerAt;
     }

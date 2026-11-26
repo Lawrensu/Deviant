@@ -17,29 +17,64 @@ static void printMessages(Game& game)
     }
 }
 
-// Act 1 with the starting resources
-static void startNewGame(Game& game)
+// Text mode title: the last ending, then continue or new when there is a save
+// False when input closed before a choice
+static bool runTextTitle(Game& game)
 {
-    game.tokens = STARTING_TOKENS;
-    game.privilege = STARTING_PRIVILEGE;
-    game.startAct(1);
+    bool hasSave = game.continueGame();
+
+    std::cout << "DEVIANT\n";
+    std::cout << "Last ending: " << game.lastEnding << "\n";
+
+    if (!hasSave)
+    {
+        game.newGame();
+        return true;
+    }
+
+    // Ask until the answer is continue or new
+    while (true)
+    {
+        std::cout << "Type continue or new\n";
+        std::string line;
+
+        if (!std::getline(std::cin, line))
+        {
+            return false;
+        }
+
+        if (line == "continue")
+        {
+            return true;
+        }
+
+        if (line == "new")
+        {
+            game.newGame();
+            return true;
+        }
+    }
 }
 
 // Text mode: the whole game in the console, one typed command per player turn
 static void runTextGame()
 {
     Game game;
-    startNewGame(game);
+
+    if (!runTextTitle(game))
+    {
+        return;
+    }
 
     while (true)
     {
         game.update();
         printMessages(game);
 
-        // Phase 4 reloads the save here instead of starting over
+        // The save holds the start of the act, reload it
         if (game.state == "game_over")
         {
-            std::cout << "Press Enter to restart\n";
+            std::cout << "Press Enter to reload\n";
             std::string line;
 
             if (!std::getline(std::cin, line))
@@ -47,7 +82,7 @@ static void runTextGame()
                 return;
             }
 
-            startNewGame(game);
+            game.reload();
             continue;
         }
 
@@ -69,8 +104,10 @@ static void runTextGame()
                 return;
             }
 
+            // The save already holds the start of this act
             if (line == "quit")
             {
+                std::cout << "Continue starts Act " << game.act << " from its start\n";
                 return;
             }
 

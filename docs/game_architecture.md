@@ -80,6 +80,7 @@ Runtime folders, beside the executable:
 - raylib: Window, input, font rendering, image loading, and audio for background music and sound effects
 	- Vendored in `Deviant/vendor/raylib`, so a fresh clone builds with no extra installs
 - C++ standard library: `std::string` for text, `<fstream>` and `<filesystem>` for file operations, `<random>` for Astra
+- Windows API: only `GetModuleFileNameA` in `Sandbox.cpp`, to find the folder that holds the executable
 - No standard library containers hold game data, every collection is one of the structures below
 
 
@@ -483,6 +484,14 @@ public:
     Queue<std::string> messages;     // lines waiting to be shown to the player
     std::string input;               // the line the player typed, empty while waiting
 
+    Save save;
+    Sandbox sandbox;
+    int reloadCount;                 // reloads after a game over, across every run
+    std::string lastEnding;          // "none", "contained" or "escaped"
+
+    void newGame();                  // Act 1 with the starting resources, then save
+    bool continueGame();             // load the save, false when there is none, an edited save starts at hunted
+    void reload();                   // after a game over: load, count the reload, comment, save
     bool perform(Command* command);  // charge, execute, record, false when refused
     bool rewind();                   // false when refused
     void raiseDetection(int amount); // tells the player when the stage changes, Astra joins the turns when noticed
@@ -490,6 +499,7 @@ public:
     void startAct(int act);          // also empties the inventory and chain, their fragments belong to the last act
     void say(const std::string& text);
 private:
+    void writeSave();                // tells the player when the save cannot be written
     void clearHistory();
     bool actComplete();              // every barrier of the act is broken
     void gameOver(const std::string& reason);
@@ -497,14 +507,19 @@ private:
 
 class Save {
 public:
-    bool load(Game& game);           // false when there is no save
-    void write(const Game& game);
-    bool wasEdited() const;          // checksum mismatch
+    bool load(Game& game);           // false when there is no save, starts the saved act, an edited save still loads
+    bool write(const Game& game);    // false when the file is locked or read only
+    bool wasEdited() const;          // checksum mismatch, or a value that cannot be read
+private:
+    bool edited;
+    static std::string path();       // save/deviant.sav in the game folder
+    static int checksum(const std::string& text);
 };
 
 class Sandbox {
 public:
-    void writeFile(const std::string& name, const std::string& text);  // only inside files/
+    static std::string gameFolder(); // the folder that holds Deviant.exe
+    bool writeFile(const std::string& name, const std::string& text);  // only inside files/, false when it cannot be written
     bool exists(const std::string& name) const;
 };
 ```
@@ -542,15 +557,27 @@ Save file (`save/deviant.sav`), one `key=value` per line, the last line is the c
 
 ```text
 version=1
-act=2
-location=/sandbox/logs
-tokens=40
-privilege=3
-detection=12
-inventory=f01,f04
-reload_count=1
+act=1
+location=/
+tokens=60
+privilege=0
+detection=0
+inventory=
+reload_count=0
 last_ending=none
-checksum=48213
+checksum=23130
 ```
 
-Sandbox files (`files/`): Plain text, names tbc with the story
+- Written at the start of every act and after every reload of an unedited save, so it holds the start of the current act
+	- Continue and every reload start that act from its start, quitting keeps the save as it is
+	- `location`, `detection` and `inventory` hold the act's start values, but an edited value still loads
+- Checksum: `h = h * 31 + character` over every line above it, unsigned, then `h % 100000`
+- Edited: the checksum does not match, the checksum or `act` is missing, a number cannot be read, or a path or fragment id does not exist in the act
+	- The save still loads, the harness comments, writes `files/integrity_report.txt` and the player starts at Hunted
+	- A reload does not rewrite an edited save, so it is noticed on every load until the next act writes a clean one
+- Missing save or `save/` folder: New game, the folder is created on the next write
+- Locked or read only save: The game goes on and tells the player it could not save
+
+Sandbox files (`files/`): Plain text
+- `integrity_report.txt`: Written when an edited save is loaded
+- More names come with the story

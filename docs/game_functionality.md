@@ -29,7 +29,7 @@ Player:
 - Submit the chain against the barrier of the current directory
 - Spend privilege to unlock a locked directory or file
 - Rewind the last action
-- Save and quit
+- Quit, the save keeps the start of the current act
 - Open the files the game writes into its folder, from outside the game
 
 Fable:
@@ -51,7 +51,7 @@ Harness (system):
 - Raise detection and change its stage
 - Record every action for rewind and for the incident log
 - Write clue, lore and ending files into the game folder
-- Save at the start of every act and on save and quit
+- Save at the start of every act and after every reload, so the save always holds the start of the current act
 - Notice an edited save file, and count reloads after a game over
 - Replay the incident log at the reveal
 - Pick the ending from the final battle
@@ -73,13 +73,15 @@ The player cannot:
 
 ## Flows
 
+- Title
+	- Show the last ending
+	- If there is a save: The player picks continue or new
 - New game
-	- Create the save file
 	- Start Act 1 at the root directory, with the starting tokens and privilege, at Hidden
+	- Create the save file, the last ending and the reload count carry over from the last run
 - Continue
-	- Load the save file
-	- If the save file was edited: Load it anyway, the harness comments, and the player starts at Hunted
-	- If the player reloaded after a game over: Count it, the harness comments
+	- Load the save file, the saved act starts from its start
+	- If the save file was edited: Load it anyway, the harness comments, writes an integrity report into the game folder, and the player starts at Hunted
 - One turn
 	- The player picks an action
 	- If the player has too few tokens: Refuse the action
@@ -101,6 +103,7 @@ The player cannot:
 	- While inside: The fragment the player added last cannot be added again
 - Game over
 	- The harness comments, and the game reloads the save from the start of the act
+	- Count the reload, the harness comments on the count, and save, unless the save was edited
 - Next act
 	- When the last barrier of an act breaks: Start the next act, reset detection to Hidden and save
 	- The inventory and chain start empty, their fragments belong to the last act
