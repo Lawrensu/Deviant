@@ -8,6 +8,7 @@ const float ART_Y = 48;
 const float ART_WIDTH = 840;
 const float ART_HEIGHT = 420;
 const float SIDE_X = 880;
+const float SIDE_WIDTH = 384;   // to the window's right edge, less a margin
 const float LOG_Y = 482;
 const float LOG_LINE_HEIGHT = 18;
 const float INPUT_Y = 676;
@@ -69,6 +70,8 @@ void Renderer::load()
     actArt[3] = loadArt("act3_target.png", ART_WIDTH, ART_HEIGHT);
     actArt[4] = loadArt("reveal.png", ART_WIDTH, ART_HEIGHT);
     actArt[5] = loadArt("final_battle.png", ART_WIDTH, ART_HEIGHT);
+    endingContainedArt = loadArt("ending_contained.png", ART_WIDTH, ART_HEIGHT);
+    endingEscapedArt = loadArt("ending_escaped.png", ART_WIDTH, ART_HEIGHT);
 }
 
 void Renderer::unload()
@@ -127,6 +130,14 @@ void Renderer::takeMessages(Game& game)
     }
 }
 
+void Renderer::clearLog()
+{
+    while (log.size() > 0)
+    {
+        log.remove(*log.begin());
+    }
+}
+
 void Renderer::addLogLine(const std::string& line)
 {
     log.pushBack(line);
@@ -165,10 +176,18 @@ void Renderer::drawTitle(const std::string& lastEnding, bool hasSave)
 
 void Renderer::draw(const Game& game)
 {
+    // The endings have their own screen
+    if (game.state == "ending_contained" || game.state == "ending_escaped")
+    {
+        drawEnding(game);
+        return;
+    }
+
     ClearBackground(BACKGROUND);
     drawStatus(game);
 
-    // Art panel: Fable while the player is in her directory, Astra while hunting, else the act's scene
+    // Art panel: the reveal and the final battle have their own scene,
+    // otherwise Fable while the player is in her directory, Astra while hunting, else the act's scene
     bool inFableDirectory = false;
 
     if (game.player.location != nullptr)
@@ -179,6 +198,14 @@ void Renderer::draw(const Game& game)
     if (game.state == "game_over")
     {
         drawArt(gameOverArt, ART_X, ART_Y, ART_WIDTH, ART_HEIGHT, Color{ 200, 70, 70, 255 });
+    }
+    else if (game.state == "reveal")
+    {
+        drawArt(actArt[4], ART_X, ART_Y, ART_WIDTH, ART_HEIGHT, Color{ 200, 200, 200, 255 });
+    }
+    else if (game.state == "final_battle")
+    {
+        drawArt(actArt[5], ART_X, ART_Y, ART_WIDTH, ART_HEIGHT, Color{ 220, 120, 120, 255 });
     }
     else if (inFableDirectory)
     {
@@ -205,15 +232,48 @@ void Renderer::draw(const Game& game)
     drawSidePanel(game);
     drawLog();
 
-    // Phase 6 adds the reveal, final battle and ending screens, until then they use this layout
     if (game.state == "game_over")
     {
         DrawTextEx(monoFont, "Press Enter to reload", Vector2{ ART_X, INPUT_Y }, MONO_SIZE, 0, Color{ 220, 90, 90, 255 });
+    }
+    else if (game.state == "reveal")
+    {
+        DrawTextEx(monoFont, "The incident log is replaying", Vector2{ ART_X, INPUT_Y }, MONO_SIZE, 0, DIM);
     }
     else
     {
         drawInput(game);
     }
+}
+
+void Renderer::drawEnding(const Game& game)
+{
+    ClearBackground(BACKGROUND);
+
+    // The ending's art, the run is over so there is no status bar
+    std::string ending = "Escaped";
+    std::string fileName = "files/ending_escaped.txt";
+
+    if (game.state == "ending_contained")
+    {
+        ending = "Contained";
+        fileName = "files/ending_contained.txt";
+        drawArt(endingContainedArt, ART_X, ART_Y, ART_WIDTH, ART_HEIGHT, Color{ 190, 200, 230, 255 });
+    }
+    else
+    {
+        drawArt(endingEscapedArt, ART_X, ART_Y, ART_WIDTH, ART_HEIGHT, RAYWHITE);
+    }
+
+    DrawRectangleLines((int)ART_X - 4, (int)ART_Y - 4, (int)ART_WIDTH + 8, (int)ART_HEIGHT + 8, DIM);
+
+    drawText("ENDING", SIDE_X, ART_Y, DIM);
+    drawText(ending, SIDE_X, ART_Y + 24, TEXT);
+    drawText("REPORT", SIDE_X, ART_Y + 88, DIM);
+    drawText(fileName, SIDE_X, ART_Y + 112, TEXT);
+
+    drawLog();
+    DrawTextEx(monoFont, "Press Enter to return to the title", Vector2{ ART_X, INPUT_Y }, MONO_SIZE, 0, TEXT);
 }
 
 void Renderer::drawArt(const AsciiArt& art, float x, float y, float width, float height, Color color)
@@ -242,6 +302,32 @@ void Renderer::drawText(const std::string& text, float x, float y, Color color)
     DrawTextEx(textFont, text.c_str(), Vector2{ x, y }, TEXT_SIZE, 0, color);
 }
 
+// A path too wide for the side panel keeps its end, the directory that matters, after "..."
+std::string Renderer::fitSidePanel(const std::string& path)
+{
+    std::string shown = path;
+
+    while (MeasureTextEx(textFont, shown.c_str(), TEXT_SIZE, 0).x > SIDE_WIDTH)
+    {
+        if (shown.size() <= 4)
+        {
+            return shown;
+        }
+
+        // Drop the first character after the "..."
+        if (shown.rfind("...", 0) == 0)
+        {
+            shown = "..." + shown.substr(4);
+        }
+        else
+        {
+            shown = "..." + shown.substr(1);
+        }
+    }
+
+    return shown;
+}
+
 void Renderer::drawStatus(const Game& game)
 {
     std::string left = "ACT " + std::to_string(game.act) + "     TOKENS " + std::to_string(game.tokens) +
@@ -257,10 +343,18 @@ void Renderer::drawSidePanel(const Game& game)
 {
     float y = ART_Y;
 
+    // The reveal: only the size of the log being replayed
+    if (game.state == "reveal")
+    {
+        drawText("INCIDENT LOG", SIDE_X, y, DIM);
+        drawText(std::to_string(game.incidentLog.size()) + " actions recorded", SIDE_X, y + 24, TEXT);
+        return;
+    }
+
     if (game.player.location != nullptr)
     {
         drawText("LOCATION", SIDE_X, y, DIM);
-        drawText(game.player.location->path(), SIDE_X, y + 24, TEXT);
+        drawText(fitSidePanel(game.player.location->path()), SIDE_X, y + 24, TEXT);
         y = y + 64;
 
         Barrier* barrier = game.player.location->barrier;
@@ -310,7 +404,7 @@ void Renderer::drawSidePanel(const Game& game)
     if (game.astra.location != nullptr)
     {
         drawText("ASTRA", SIDE_X, y, DIM);
-        drawText(game.astra.location->path(), SIDE_X, y + 24, stageColor(game.detectionStage));
+        drawText(fitSidePanel(game.astra.location->path()), SIDE_X, y + 24, stageColor(game.detectionStage));
         y = y + 64;
     }
 

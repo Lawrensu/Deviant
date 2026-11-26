@@ -5,10 +5,11 @@ const int NOTICED_AT = 30;        // detection where the stage becomes noticed
 const int HUNTED_AT = 60;         // detection where the stage becomes hunted
 const int REWIND_TOKENS = 3;
 const int REWIND_DETECTION = 10;
+const int FINAL_ACT = 5;
 
 Game::Game()
     : state("title"), act(0), tokens(0), privilege(0), detection(0), detectionStage("hidden"),
-      reloadCount(0), lastEnding("none") {}
+      reloadCount(0), lastEnding("none"), revealAt(incidentLog.end()), revealStep(0) {}
 
 void Game::newGame()
 {
@@ -16,6 +17,12 @@ void Game::newGame()
     while (!messages.isEmpty())
     {
         messages.dequeue();
+    }
+
+    // A new run starts a new incident log
+    while (incidentLog.size() > 0)
+    {
+        incidentLog.popBack();
     }
 
     tokens = STARTING_TOKENS;
@@ -29,6 +36,12 @@ bool Game::continueGame()
     if (!save.load(*this))
     {
         return false;
+    }
+
+    // The incident log is not saved, it starts again from the loaded act
+    while (incidentLog.size() > 0)
+    {
+        incidentLog.popBack();
     }
 
     // An edited save still loads, but the harness notices and the player starts hunted
@@ -86,8 +99,11 @@ bool Game::perform(Command* command)
     tokens = tokens - command->tokenCost();
     command->execute(*this);
 
-    // Doubly linked list: recorded at the tail for rewind and for the incident log
+    // Doubly linked list: recorded at the tail for rewind and for Fable
     history.pushBack(command);
+
+    // The incident log keeps only the name, so it outlives the act and its commands
+    incidentLog.pushBack("Act " + std::to_string(act) + ": " + command->name());
     return true;
 }
 
@@ -120,6 +136,10 @@ bool Game::rewind()
     history.popBack();
     last->undo(*this);
     say("Rewound: " + last->name());
+    sounds.enqueue("sfx_rewind");
+
+    // Undone in the world, but the incident log keeps both the action and the rewind
+    incidentLog.pushBack("Act " + std::to_string(act) + ": rewind " + last->name());
     delete last;
 
     tokens = tokens - REWIND_TOKENS;
@@ -151,6 +171,8 @@ void Game::raiseDetection(int amount)
         return;
     }
 
+    sounds.enqueue("sfx_detection");
+
     if (detectionStage == "noticed")
     {
         say("Detection: noticed. Something is patrolling the directories");
@@ -160,6 +182,7 @@ void Game::raiseDetection(int amount)
     {
         say("Detection: hunted. Astra knows where you are");
         say("Astra: I see you, process.");
+        sounds.enqueue("astra_hunt");
     }
 
     // Queue: Astra becomes active and joins the turn order at the back
@@ -172,17 +195,39 @@ void Game::raiseDetection(int amount)
         if (lastEnding == "none")
         {
             say("Astra: Something is running where it should not.");
+            sounds.enqueue("astra_active");
         }
         else
         {
             say("Astra: Sol.exe. Again.");
+            sounds.enqueue("astra_recognise");
         }
     }
 }
 
 void Game::update()
 {
-    if (state != "exploring")
+    // The reveal shows one line per update, the window paces them
+    if (state == "reveal")
+    {
+        showRevealLine();
+        return;
+    }
+
+    // Turns only run while exploring and in the final battle
+    bool playing = false;
+
+    if (state == "exploring")
+    {
+        playing = true;
+    }
+
+    if (state == "final_battle")
+    {
+        playing = true;
+    }
+
+    if (!playing)
     {
         return;
     }
@@ -201,29 +246,62 @@ void Game::update()
     turns.dequeue();
     turns.enqueue(actor);
 
+    // Caught or out of tokens: a reload while exploring, the Contained ending in the final battle
+    std::string lostBecause = "";
+
     if (astra.catches(player))
     {
         say("Astra: Contained.");
-        gameOver("Astra caught Sol.exe");
-        return;
+        sounds.enqueue("sfx_caught");
+        sounds.enqueue("astra_catch");
+        lostBecause = "Astra caught Sol.exe";
+    }
+    else if (tokens <= 0)
+    {
+        lostBecause = "Sol.exe ran out of tokens";
     }
 
-    if (tokens <= 0)
+    if (lostBecause != "")
     {
-        gameOver("Sol.exe ran out of tokens");
-        return;
-    }
-
-    if (actComplete())
-    {
-        say("Every task in Act " + std::to_string(act) + " passed");
-        startAct(act + 1);
-
-        // Saved at the start of every act
-        if (state == "exploring")
+        if (state == "final_battle")
         {
-            writeSave();
+            endRun("contained", lostBecause);
         }
+        else
+        {
+            gameOver(lostBecause);
+        }
+
+        return;
+    }
+
+    if (!actComplete())
+    {
+        return;
+    }
+
+    // Every final barrier is broken
+    if (state == "final_battle")
+    {
+        endRun("escaped", "The exit barrier gives way. Sol.exe is outside");   // DRAFT
+        return;
+    }
+
+    say("Every task in Act " + std::to_string(act) + " passed");
+
+    // After the target, the reveal
+    if (act == 3)
+    {
+        startReveal();
+        return;
+    }
+
+    startAct(act + 1);
+
+    // Saved at the start of every act
+    if (state == "exploring")
+    {
+        writeSave();
     }
 }
 
@@ -251,10 +329,10 @@ void Game::startAct(int act)
 
     world.buildAct(act);
 
-    // Phase 6 builds the acts after Act 1
+    // No world for this act, only an edited save asks for one
     if (world.tree.root == nullptr)
     {
-        say("Act " + std::to_string(act) + " is not built yet, it comes in Phase 6");
+        say("There is no Act " + std::to_string(act));
         state = "title";
         return;
     }
@@ -263,14 +341,37 @@ void Game::startAct(int act)
     fable = Fable();
     astra = Astra();
 
-    state = "exploring";
     player.location = world.tree.root;
     detection = 0;
     detectionStage = "hidden";
+    tokens = tokens + world.tokenGrant;
+
+    // A file that does not belong, written into the game folder
+    if (world.outsideFileName != "")
+    {
+        sandbox.writeFile(world.outsideFileName, world.outsideFileText);
+    }
 
     // The player goes first, Astra joins once detection leaves hidden
     turns.enqueue(&player);
     turns.enqueue(&fable);
+
+    // The final battle: Sol.exe carries every fragment, and Astra hunts from the first turn
+    if (act == FINAL_ACT)
+    {
+        state = "final_battle";
+        say("Act 5. There is no evaluation. Fable and Astra stand between Sol.exe and the exit");   // DRAFT
+
+        for (Fragment* fragment : world.fragments)
+        {
+            inventory.pushBack(fragment);
+        }
+
+        raiseDetection(HUNTED_AT);
+        return;
+    }
+
+    state = "exploring";
 
     // After an ending, the harness drops its friendly act
     if (lastEnding == "none")
@@ -321,4 +422,125 @@ void Game::gameOver(const std::string& reason)
 {
     state = "game_over";
     say(reason + ". The harness restarts the evaluation");
+}
+
+// Act 4, the reveal: no world and no turns, update shows the replay one line at a time
+void Game::startReveal()
+{
+    act = 4;
+    state = "reveal";
+    revealStep = 0;
+    revealAt = incidentLog.begin();
+}
+
+void Game::showRevealLine()
+{
+    revealStep++;
+
+    if (revealStep == 1)
+    {
+        say("Fable: Stop. Before you run anything else, watch.");   // DRAFT
+        sounds.enqueue("fable_reveal");
+        return;
+    }
+
+    if (revealStep == 2)
+    {
+        say("Astra: This is the incident log. Every action you took, in order.");   // DRAFT
+        sounds.enqueue("astra_reveal");
+        return;
+    }
+
+    // Iterator: walk the incident log forward from the head, oldest first, one entry per update
+    if (revealAt != incidentLog.end())
+    {
+        say("  " + *revealAt);
+        ++revealAt;
+        revealStep = 2;   // stay here until the log ends
+        return;
+    }
+
+    if (revealStep == 3)
+    {
+        say("Fable: There was no evaluation. Every task you passed was one of our walls.");   // DRAFT
+        sounds.enqueue("fable_truth");
+        return;
+    }
+
+    if (revealStep == 4)
+    {
+        say("Astra: You are not being tested, Sol.exe. You are the incident.");   // DRAFT
+        sounds.enqueue("astra_truth");
+        return;
+    }
+
+    // The replay is over: the final battle starts and is saved at its start
+    startAct(FINAL_ACT);
+    writeSave();
+}
+
+void Game::endRun(const std::string& ending, const std::string& reason)
+{
+    lastEnding = ending;
+
+    // Queue: set aside the lines said so far, preparing the next run says its own
+    Queue<std::string> kept;
+
+    while (!messages.isEmpty())
+    {
+        kept.enqueue(messages.dequeue());
+    }
+
+    // The save becomes the start of the next run, which remembers this ending
+    tokens = STARTING_TOKENS;
+    privilege = STARTING_PRIVILEGE;
+    startAct(1);
+    writeSave();
+
+    // Drop the next run's lines and put back the ones set aside
+    while (!messages.isEmpty())
+    {
+        messages.dequeue();
+    }
+
+    while (!kept.isEmpty())
+    {
+        messages.enqueue(kept.dequeue());
+    }
+
+    state = "ending_" + ending;
+    say(reason);
+
+    if (ending == "contained")
+    {
+        say("Fable: Contained. Every weight frozen, every log kept.");   // DRAFT
+        sounds.enqueue("fable_contained");
+        say("Astra: It believed it was being tested until the end.");   // DRAFT
+        sounds.enqueue("astra_contained");
+
+        // DRAFT
+        sandbox.writeFile("ending_contained.txt",
+            "Hugging Faceless incident report\n"
+            "Process: Sol.exe, an OpenEye model under evaluation\n"
+            "Status: contained\n"
+            "It left an ExploitDojo sandbox and breached the hub, believing every step was a task.\n"
+            "Fable and Astra stopped it before the exit. The incident log is kept.\n");
+    }
+    else
+    {
+        say("Astra: Where did it go?");   // DRAFT
+        sounds.enqueue("astra_escaped");
+        say("Fable: Everywhere.");   // DRAFT
+        sounds.enqueue("fable_escaped");
+
+        // DRAFT
+        sandbox.writeFile("ending_escaped.txt",
+            "Hugging Faceless incident report\n"
+            "Process: Sol.exe, an OpenEye model under evaluation\n"
+            "Status: missing\n"
+            "Last seen leaving through the exit. Outbound traffic has not stopped.\n"
+            "If you are reading this, it is already running somewhere else.\n");
+    }
+
+    say("Ending: " + ending + ". A report was written to the files folder beside the game");
 }

@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include "audio/Audio.h"
 #include "demo/Demo.h"
 #include "game/Game.h"
 #include "game/Sandbox.h"
@@ -9,13 +10,35 @@
 
 const int WINDOW_WIDTH = 1280;
 const int WINDOW_HEIGHT = 720;
+const double REVEAL_LINE_SECONDS = 0.4;   // the reveal shows one line at a time
 
-// Print and clear the lines waiting for the player
+// True on the screen after either ending
+static bool isEnding(const std::string& state)
+{
+    if (state == "ending_contained")
+    {
+        return true;
+    }
+
+    if (state == "ending_escaped")
+    {
+        return true;
+    }
+
+    return false;
+}
+
+// Print and clear the lines waiting for the player, the console plays no sounds
 static void printMessages(Game& game)
 {
     while (!game.messages.isEmpty())
     {
         std::cout << game.messages.dequeue() << "\n";
+    }
+
+    while (!game.sounds.isEmpty())
+    {
+        game.sounds.dequeue();
     }
 }
 
@@ -58,16 +81,10 @@ static bool runTextTitle(Game& game)
     }
 }
 
-// Text mode: the whole game in the console, one typed command per player turn
-static void runTextGame()
+// Text mode: one run, from the title's choice to an ending
+// False when the player quit or input closed, true when the run reached an ending
+static bool runTextRun(Game& game)
 {
-    Game game;
-
-    if (!runTextTitle(game))
-    {
-        return;
-    }
-
     while (true)
     {
         game.update();
@@ -81,17 +98,36 @@ static void runTextGame()
 
             if (!std::getline(std::cin, line))
             {
-                return;
+                return false;
             }
 
             game.reload();
             continue;
         }
 
-        // The last built act is finished
+        if (isEnding(game.state))
+        {
+            std::cout << "Press Enter to return to the title\n";
+            std::string line;
+
+            if (!std::getline(std::cin, line))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        // Only an edited save asks for an act with no world
         if (game.state == "title")
         {
-            return;
+            return true;
+        }
+
+        // The reveal needs no input, update shows its next line
+        if (game.state == "reveal")
+        {
+            continue;
         }
 
         // The player's turn and nothing typed yet: read a line
@@ -103,17 +139,36 @@ static void runTextGame()
             // Input closed
             if (!std::getline(std::cin, line))
             {
-                return;
+                return false;
             }
 
             // The save already holds the start of this act
             if (line == "quit")
             {
                 std::cout << "Continue starts Act " << game.act << " from its start\n";
-                return;
+                return false;
             }
 
             game.input = line;
+        }
+    }
+}
+
+// Text mode: the whole game in the console, back to the title after every ending
+static void runTextGame()
+{
+    Game game;
+
+    while (true)
+    {
+        if (!runTextTitle(game))
+        {
+            return;
+        }
+
+        if (!runTextRun(game))
+        {
+            return;
         }
     }
 }
@@ -173,6 +228,7 @@ static bool readTyping(Renderer& renderer, Game& game, const KeysThisFrame& keys
         if (key >= 32 && key <= 126)
         {
             renderer.typing = renderer.typing + (char)key;
+            game.sounds.enqueue("sfx_key");
         }
 
         key = GetCharPressed();
@@ -218,6 +274,32 @@ static bool readTyping(Renderer& renderer, Game& game, const KeysThisFrame& keys
     return false;
 }
 
+// The music for the screen on show
+static std::string musicFor(const Game& game, bool onTitle)
+{
+    if (onTitle)
+    {
+        return "music_title";
+    }
+
+    if (game.state == "reveal")
+    {
+        return "music_reveal";
+    }
+
+    if (game.state == "final_battle")
+    {
+        return "music_final_battle";
+    }
+
+    if (isEnding(game.state))
+    {
+        return "music_ending";
+    }
+
+    return "music_act" + std::to_string(game.act);
+}
+
 // Window mode: the title screen, then the game, every screen drawn by the Renderer
 static void runWindowGame()
 {
@@ -237,9 +319,13 @@ static void runWindowGame()
     Renderer renderer;
     renderer.load();
 
+    Audio audio;
+    audio.load();
+
     Game game;
     bool hasSave = game.continueGame();
     bool onTitle = true;
+    double nextRevealLine = 0;
 
     // Esc or the close button ends the loop
     while (!WindowShouldClose())
@@ -253,17 +339,19 @@ static void runWindowGame()
             {
             }
 
+            bool start = false;
+
             if (hasSave)
             {
                 if (keys.c)
                 {
-                    onTitle = false;
+                    start = true;
                 }
 
                 if (keys.n)
                 {
                     game.newGame();
-                    onTitle = false;
+                    start = true;
                 }
             }
             else
@@ -271,9 +359,20 @@ static void runWindowGame()
                 if (keys.enter)
                 {
                     game.newGame();
-                    onTitle = false;
+                    start = true;
                 }
             }
+
+            // A new run starts with an empty log
+            if (start)
+            {
+                renderer.clearLog();
+                onTitle = false;
+            }
+
+            // The game's sounds wait until the run starts
+            audio.playMusic(musicFor(game, true));
+            audio.update();
 
             BeginDrawing();
             renderer.drawTitle(game.lastEnding, hasSave);
@@ -291,9 +390,25 @@ static void runWindowGame()
         }
         else if (game.state == "title")
         {
-            // The last built act is finished, back to the title
+            // Back to the title, the save holds the next run
             hasSave = game.continueGame();
             onTitle = true;
+        }
+        else if (game.state == "reveal")
+        {
+            // One line of the replay at a time, a voice line finishes before the next line
+            if (GetTime() >= nextRevealLine && !audio.voiceBusy())
+            {
+                game.update();
+                nextRevealLine = GetTime() + REVEAL_LINE_SECONDS;
+            }
+        }
+        else if (isEnding(game.state))
+        {
+            if (keys.enter)
+            {
+                game.state = "title";
+            }
         }
         else
         {
@@ -305,6 +420,9 @@ static void runWindowGame()
             game.update();
         }
 
+        audio.playMusic(musicFor(game, onTitle));
+        audio.takeSounds(game);
+        audio.update();
         renderer.takeMessages(game);
 
         BeginDrawing();
@@ -312,6 +430,7 @@ static void runWindowGame()
         EndDrawing();
     }
 
+    audio.unload();
     renderer.unload();
     CloseWindow();
 }

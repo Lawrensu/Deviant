@@ -945,11 +945,19 @@ static void demoCommand()
     std::cout << "  tokens " << tokensBefore << " before, " << game.tokens << " after, nothing was charged\n";
     std::cout << "  history size " << historyBefore << " before, " << game.history.size() << " after\n";
 
-    std::cout << "Step " << step++ << ": the history is the incident log, oldest first\n";
+    std::cout << "Step " << step++ << ": the history oldest first, each command's name\n";
 
     for (DoublyLinkedList<Command*>::Iterator it = game.history.begin(); it != game.history.end(); ++it)
     {
         std::cout << "  " << (*it)->name() << "\n";
+    }
+
+    // perform also copies each name into the incident log, which outlives the act and is replayed at the reveal
+    std::cout << "Step " << step++ << ": the incident log the reveal replays, the same names with their act\n";
+
+    for (DoublyLinkedList<std::string>::Iterator it = game.incidentLog.begin(); it != game.incidentLog.end(); ++it)
+    {
+        std::cout << "  " << *it << "\n";
     }
 
     // The same walk Fable makes, from the newest command back

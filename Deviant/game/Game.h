@@ -39,8 +39,10 @@ public:
     SinglyLinkedList<Fragment*> inventory;
     Stack<Fragment*, CHAIN_LIMIT> chain;
     DoublyLinkedList<Command*> history;   // every action of the act, owns the commands
+    DoublyLinkedList<std::string> incidentLog;   // every action of the run across the acts, replayed at the reveal
     Queue<Process*> turns;
     Queue<std::string> messages;          // lines waiting to be shown to the player
+    Queue<std::string> sounds;            // sound and voice names waiting to be played, only the window plays them
     std::string input;                    // the line the player typed, empty while waiting
 
     Save save;
@@ -71,7 +73,7 @@ public:
     // Add detection, move to the stage it falls in, and tell the player when the stage changes
     void raiseDetection(int amount);
 
-    // One step: the front actor takes its turn
+    // One step: the front actor takes its turn, or during the reveal the next line of the replay
     void update();
 
     // Build the act and reset what belongs to the last one
@@ -81,8 +83,14 @@ public:
     void say(const std::string& text);
 
 private:
+    DoublyLinkedList<std::string>::Iterator revealAt;   // the next incident log entry the reveal shows
+    int revealStep;                                     // how far the reveal has got, its lines are shown one per update
+
     void writeSave();   // tells the player when the save cannot be written
     void clearHistory();
     bool actComplete();
     void gameOver(const std::string& reason);
+    void startReveal();
+    void showRevealLine();
+    void endRun(const std::string& ending, const std::string& reason);   // "contained" or "escaped"
 };

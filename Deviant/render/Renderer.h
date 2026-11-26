@@ -25,6 +25,9 @@ public:
     // Move the game's new messages into the log, the oldest lines drop off
     void takeMessages(Game& game);
 
+    // Empty the log, when a run starts from the title
+    void clearLog();
+
     void drawTitle(const std::string& lastEnding, bool hasSave);
     void draw(const Game& game);
 
@@ -41,15 +44,19 @@ private:
     AsciiArt fableArt;
     AsciiArt astraArt;
     AsciiArt actArt[6];   // by act number, 0 is unused
+    AsciiArt endingContainedArt;
+    AsciiArt endingEscapedArt;
 
     SinglyLinkedList<std::string> log;
 
     AsciiArt loadArt(const std::string& fileName, float maxWidth, float maxHeight);
     void drawArt(const AsciiArt& art, float x, float y, float width, float height, Color color);
     void drawText(const std::string& text, float x, float y, Color color);
+    std::string fitSidePanel(const std::string& path);
     void drawStatus(const Game& game);
     void drawSidePanel(const Game& game);
     void drawLog();
     void drawInput(const Game& game);
+    void drawEnding(const Game& game);
     void addLogLine(const std::string& line);
 };

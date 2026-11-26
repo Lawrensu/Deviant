@@ -250,19 +250,21 @@ bool Save::load(Game& game)
         act = 1;
     }
 
-    // Apply: counters and resources first, then the act, which builds its world
+    // Apply: counters first, then the act, which builds its world
     game.reloadCount = reloadCount;
     game.lastEnding = lastEnding;
-    game.tokens = tokens;
     game.privilege = privilege;
     game.startAct(act);
 
-    // An act that is not built yet falls back to Act 1
-    if (game.state != "exploring")
+    // An act with no world, such as the reveal, falls back to Act 1
+    if (game.state == "title")
     {
         edited = true;
         game.startAct(1);
     }
+
+    // Tokens after the act, the saved value already holds the act's token grant
+    game.tokens = tokens;
 
     // Place the player, an unknown path stays at the root
     Directory* saved = game.world.tree.find(location);
@@ -308,6 +310,12 @@ bool Save::load(Game& game)
             continue;
         }
 
+        // The final battle starts with every fragment already in the inventory
+        if (game.inventory.contains(fragment))
+        {
+            continue;
+        }
+
         File* file = fileHolding(game.world.tree, fragment);
 
         if (file != nullptr)
@@ -318,9 +326,10 @@ bool Save::load(Game& game)
         game.inventory.pushBack(fragment);
     }
 
-    if (detection > 0)
+    // The final battle starts at hunted, only the rest of the saved detection is added
+    if (detection > game.detection)
     {
-        game.raiseDetection(detection);
+        game.raiseDetection(detection - game.detection);
     }
 
     return true;

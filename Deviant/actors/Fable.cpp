@@ -28,10 +28,12 @@ bool Fable::takeTurn(Game& game)
         if (game.lastEnding == "none")
         {
             game.say("Fable: You always come this way.");
+            game.sounds.enqueue("fable_entry");
         }
         else
         {
             game.say("Fable: I know this process.");
+            game.sounds.enqueue("fable_recognise");
         }
 
         game.raiseDetection(FABLE_ENTRY_DETECTION);
@@ -57,6 +59,7 @@ bool Fable::takeTurn(Game& game)
     {
         game.say("Fable blocks " + lastAdded->id + " " + lastAdded->name);
         game.say("Fable: Not that one. I watched you use it.");
+        game.sounds.enqueue("fable_block");
     }
 
     blockedFragment = lastAdded;

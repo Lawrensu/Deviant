@@ -21,6 +21,7 @@ void MoveCommand::execute(Game& game)
     previous = game.player.location;
     game.player.location = target;
     game.say("Moved to " + target->path());
+    game.sounds.enqueue("sfx_move");
 }
 
 void MoveCommand::undo(Game& game)
@@ -54,6 +55,7 @@ void OpenFileCommand::execute(Game& game)
         file->fragment = nullptr;
         game.inventory.pushBack(taken);
         game.say("Took fragment " + taken->id + " " + taken->name);
+        game.sounds.enqueue("sfx_fragment");
     }
 }
 
@@ -244,6 +246,7 @@ void SubmitChainCommand::execute(Game& game)
 
         result = "broke " + here->id;
         game.say("Barrier broken: " + here->name + ". Privilege +" + std::to_string(here->privilegeReward));
+        game.sounds.enqueue("sfx_barrier_break");
         return;
     }
 
@@ -264,6 +267,7 @@ void SubmitChainCommand::execute(Game& game)
 
     result = "wrong chain";
     game.say("Wrong chain. The fragments return to your inventory");
+    game.sounds.enqueue("sfx_wrong_chain");
 }
 
 // Never called, canUndo is false
