@@ -25,7 +25,9 @@ Deviant/
   Deviant.sln
   Deviant/
     Deviant.vcxproj
-    main.cpp              # entry point, opens the window and runs the game loop
+    main.cpp              # entry point, opens the window and runs the game loop, or runs a demo
+    demo/
+      Demo.h/.cpp         # console demo of each assessed concept, run with --demo <concept>
     structures/
       SinglyLinkedList.h  # inventory
       DoublyLinkedList.h  # action history
@@ -55,8 +57,12 @@ Deviant/
       Renderer.h/.cpp     # draws every screen
     assets/
       images/             # source images, converted at start up
-      fonts/              # monospace font
+      fonts/              # Geist for text, Geist Mono for ASCII art
+    vendor/
+      raylib/             # prebuilt raylib 5.5 for MSVC, linked from Deviant.vcxproj
   docs/
+  notes/
+    assets.md             # images, fonts and audio the game needs
   README.md
 ```
 
@@ -71,6 +77,7 @@ Runtime folders, beside the executable:
 # Dependencies
 
 - raylib: Window, input, font rendering and image loading
+	- Vendored in `Deviant/vendor/raylib`, so a fresh clone builds with no extra installs
 - C++ standard library: `std::string` for text, `<fstream>` and `<filesystem>` for file operations, `<random>` for Astra
 - No standard library containers hold game data, every collection is one of the structures below
 
