@@ -81,7 +81,9 @@ Folder: `Deviant/assets/fonts/`, in place
 Folder: `Deviant/assets/audio/`
 
 General:
-- Provided later, raylib plays them, playback is built in Phase 6
+- Provided later, raylib plays them, playback is in place
+- Music follows the screen, game over keeps the act's music
+- Sound effects play at once, voice lines play one at a time in the order they happen
 - `.ogg` for music, `.wav` for sound effects and voice lines, raylib loads both
 - File names below are suggestions, any name works once it is listed here
 - A missing file is skipped, the game stays silent for it
@@ -107,12 +109,19 @@ Sound effects:
 
 Voice lines, each one also shows as text in the message log:
 - Fable, the predictor: calm, quiet, certain, as if reading something she has already seen
-	- `fable_entry.wav`: The player enters her directory: "You always come this way." (DRAFT)
-	- `fable_block.wav`: She blocks a fragment: "Not that one. I watched you use it." (DRAFT)
+	- `fable_entry.wav`: The player enters her directory: "You always come this way."
+	- `fable_block.wav`: She blocks a fragment: "Not that one. I watched you use it."
 	- `fable_recognise.wav`: After an ending, on entering her directory: "I know this process."
+	- `fable_reveal.wav`: The reveal begins: "Stop. Before you run anything else, watch." (DRAFT)
+	- `fable_truth.wav`: After the replay: "There was no evaluation. Every task you passed was one of our walls." (DRAFT)
+	- `fable_contained.wav`: Contained ending: "Contained. Every weight frozen, every log kept." (DRAFT)
+	- `fable_escaped.wav`: Escaped ending, answering Astra: "Everywhere." (DRAFT)
 - Astra, the hunter: flat, close, short sentences
-	- `astra_active.wav`: Detection reaches noticed: "Something is running where it should not." (DRAFT)
-	- `astra_hunt.wav`: The stage becomes hunted: "I see you, process." (DRAFT)
-	- `astra_catch.wav`: She catches Sol.exe: "Contained." (DRAFT)
+	- `astra_active.wav`: Detection reaches noticed: "Something is running where it should not."
+	- `astra_hunt.wav`: The stage becomes hunted: "I see you, process."
+	- `astra_catch.wav`: She catches Sol.exe: "Contained."
 	- `astra_recognise.wav`: After an ending, when she becomes active: "Sol.exe. Again."
-- Reveal and final battle lines come with Phase 6
+	- `astra_reveal.wav`: The reveal begins: "This is the incident log. Every action you took, in order." (DRAFT)
+	- `astra_truth.wav`: After the replay: "You are not being tested, Sol.exe. You are the incident." (DRAFT)
+	- `astra_contained.wav`: Contained ending: "It believed it was being tested until the end." (DRAFT)
+	- `astra_escaped.wav`: Escaped ending: "Where did it go?" (DRAFT)

@@ -36,22 +36,23 @@ Fable:
 - Guard her fixed directories
 - Raise detection when the player enters one of her directories
 - Block the fragment the player used last, while the player is in her directory
-- Fight beside Astra in the final battle
+- Fight beside Astra in the final battle, guarding every directory
 
 Astra:
 - Stay idle while the player is Hidden
 - Patrol at random while the player is Noticed
 - Move toward the player while the player is Hunted, sometimes taking the wrong branch
 - Catch the player on reaching their directory
-- Fight beside Fable in the final battle
+- Fight beside Fable in the final battle, hunting from the first turn
 
 Harness (system):
 - Order the turns: The player, then each active defender
-- Charge tokens for every action
+- Charge tokens for every action, and add tokens at the start of each act after the first
 - Raise detection and change its stage
 - Record every action for rewind and for the incident log
 - Write clue, lore and ending files into the game folder
 - Save at the start of every act and after every reload, so the save always holds the start of the current act
+- Play music for each screen, sound effects and voice lines, in the window only
 - Notice an edited save file, and count reloads after a game over
 - Replay the incident log at the reveal
 - Pick the ending from the final battle
@@ -61,7 +62,7 @@ Harness (system):
 ## Rules
 
 The player cannot:
-- Act during a defender's turn
+- Act during a defender's turn, or during the reveal
 - Submit an empty chain, or a chain longer than the chain limit
 - Add a fragment Fable is blocking
 - Enter a locked directory or open a locked file without unlocking it
@@ -79,6 +80,8 @@ The player cannot:
 - Window
 	- The player types a command, Enter hands it to their turn, Esc or quit closes the game
 	- After a game over, Enter reloads
+	- After an ending, Enter returns to the title
+	- Music follows the screen, voice lines play one at a time, a missing audio file is silent
 - New game
 	- Start Act 1 at the root directory, with the starting tokens and privilege, at Hidden
 	- Create the save file, the last ending and the reload count carry over from the last run
@@ -108,14 +111,21 @@ The player cannot:
 	- The harness comments, and the game reloads the save from the start of the act
 	- Count the reload, the harness comments on the count, and save, unless the save was edited
 - Next act
-	- When the last barrier of an act breaks: Start the next act, reset detection to Hidden and save
+	- When the last barrier of an act breaks: Start the next act, add its tokens, reset detection to Hidden and save
 	- The inventory and chain start empty, their fragments belong to the last act
-	- After Act 3: The reveal replays the incident log, then the final battle starts
+	- Act 2 and Act 3 write a file into the game folder when they start, Act 2's holds the order of a chain
+	- After Act 3: The reveal, then the final battle
+- Reveal
+	- Fable and Astra speak, then the incident log replays one line at a time, every action of the run with its act, rewinds included
+	- Fable and Astra speak again, then the final battle starts and is saved
+	- The incident log is not saved, after a quit or a reload it starts from that act
 - Final battle
-	- Fable and Astra are both active, and the player starts at Hunted
+	- Sol.exe starts with every fragment it needs, each barrier's name gives its chain
+	- Fable guards every directory, Astra hunts from the first turn, and the player starts at Hunted
 	- If the player breaks every final barrier: Escaped ending
-	- If the player is caught or runs out of tokens: Contained ending
+	- If the player is caught or runs out of tokens: Contained ending, there is no reload
 - Ending
 	- Write the ending file into the game folder
-	- Mark the ending in the save file, and return to the title screen
+	- The save becomes the start of a new run that remembers the ending, the reload count carries over
+	- Enter returns to the title screen, which shows the ending
 	- The next run changes as described in the [README](../README.md#endings)

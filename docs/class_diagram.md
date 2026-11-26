@@ -47,6 +47,7 @@ classDiagram
     class Sandbox
     class Renderer
     class AsciiConverter
+    class Audio
     class SinglyLinkedList~T~
     class DoublyLinkedList~T~
     class Stack~T~
@@ -64,8 +65,8 @@ classDiagram
     Game *-- Astra
     Game *-- SinglyLinkedList : inventory
     Game *-- Stack : chain
-    Game *-- DoublyLinkedList : history
-    Game *-- Queue : turns
+    Game *-- DoublyLinkedList : history and incident log
+    Game *-- Queue : turns, messages and sounds
 
     World *-- DirectoryTree
     World *-- HashTable : combinations
@@ -82,6 +83,9 @@ classDiagram
     Save ..> Sandbox : gameFolder
     Renderer --> Game : draws
     Renderer --> AsciiConverter
+    Audio --> Game : plays its sounds
+    Audio *-- HashTable : sounds and music
+    Audio *-- Queue : voices
 ```
 
 
@@ -184,8 +188,16 @@ classDiagram
         +SinglyLinkedList~Fragment*~ fragments
         +SinglyLinkedList~Barrier*~ barriers
         +Directory* astraStart
+        +int tokenGrant
+        +string outsideFileName
+        +string outsideFileText
         +buildAct(act) void
         -clear() void
+    }
+    class Audio {
+        -HashTable~Sound~ sounds
+        -HashTable~Music~ music
+        +takeSounds(game) void
     }
     class SubmitChainCommand {
         +execute(game) void
@@ -200,6 +212,7 @@ classDiagram
     SubmitChainCommand ..> Stack : builds the key from the chain
     SubmitChainCommand --> HashTable : find(key)
     HashTable o-- Barrier : value
+    Audio *-- HashTable : file name to sound
 ```
 
 
@@ -276,22 +289,26 @@ classDiagram
     }
     class Game {
         +DoublyLinkedList~Command*~ history
+        +DoublyLinkedList~string~ incidentLog
+        -DoublyLinkedListIterator revealAt
         +perform(command) bool
         +rewind() bool
+        -showRevealLine() void
     }
     class Command {
         <<abstract>>
     }
     class Fable
-    class Renderer
 
     DoublyLinkedList *-- DoublyLinkedListNode
     DoublyLinkedListNode o-- DoublyLinkedListNode : prev and next
     DoublyLinkedList ..> DoublyLinkedListIterator : creates
-    Game *-- DoublyLinkedList : history
-    DoublyLinkedList o-- Command
-    Fable ..> DoublyLinkedListIterator : reads backward
-    Renderer ..> DoublyLinkedListIterator : replays forward at the reveal
+    Game *-- DoublyLinkedList : history and incident log
+    DoublyLinkedList o-- Command : history
+    Fable ..> DoublyLinkedListIterator : reads the history backward
+    Game ..> DoublyLinkedListIterator : replays the incident log forward at the reveal
+
+    note for Game "history: the act's commands, rewind pops the tail\nincidentLog: every command name of the run, kept across acts"
 ```
 
 
@@ -351,9 +368,15 @@ classDiagram
     class Game {
         +Queue~Process*~ turns
         +Queue~string~ messages
+        +Queue~string~ sounds
         +update() void
         +startAct(act) void
         +say(text) void
+    }
+    class Audio {
+        -Queue~string~ voices
+        +takeSounds(game) void
+        +update() void
     }
     class Process {
         <<abstract>>
@@ -361,10 +384,12 @@ classDiagram
 
     Queue *-- QueueNode
     QueueNode o-- QueueNode : next
-    Game *-- Queue : turns and messages
+    Game *-- Queue : turns, messages and sounds
+    Audio *-- Queue : voices
+    Audio --> Game : dequeues sounds
     Queue o-- Process
 
-    note for Game "update(): dequeue the front actor, let it take its turn, enqueue it at the back\nAstra joins when Noticed, both defenders in the final battle"
+    note for Game "update(): dequeue the front actor, let it take its turn, enqueue it at the back\nAstra joins when Noticed, or from the first turn of the final battle"
 ```
 
 
@@ -451,14 +476,19 @@ classDiagram
     }
     class Renderer
     class Fable
+    class Game
+    class Save
+    class World
 
     SinglyLinkedList ..> SinglyLinkedListIterator : creates
     DoublyLinkedList ..> DoublyLinkedListIterator : creates
     DirectoryTree ..> PreorderIterator : creates
     Renderer --> SinglyLinkedListIterator : inventory and message log
-    Renderer --> DoublyLinkedListIterator : reveal
+    Game --> DoublyLinkedListIterator : incident log forward at the reveal
     Fable --> DoublyLinkedListIterator : history backward
     DirectoryTree --> PreorderIterator : find, tree search
+    Save --> PreorderIterator : the file holding a fragment
+    World --> PreorderIterator : Fable guards every final directory
 ```
 
 

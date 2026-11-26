@@ -138,11 +138,11 @@ Each concept has a dedicated subsystem, see [game architecture](docs/game_archit
 - Polymorphism: Each actor overrides how it takes its turn
 - Hash table: Looks up what a fragment chain unlocks
 - Singly linked list: The fragment inventory
-- Doubly linked list: The action history, rewound during play and replayed as the incident log at the reveal
+- Doubly linked list: The action history, rewound during play, and the incident log replayed at the reveal
 - Stack: The fragment chain being built, the last fragment added is the first removed
 - Queue: Turn order between the player and the defenders
 - Tree: The directory tree the player explores and Astra hunts through
-- Iterator: Traverses the inventory, the action history and the directory tree without exposing their internals
+- Iterator: Traverses the inventory, the action history, the incident log and the directory tree without exposing their internals
 - Command (chosen design pattern): Every action is an object, so it can be undone, logged and read by Fable
 
 
