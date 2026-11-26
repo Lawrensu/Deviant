@@ -1,0 +1,12 @@
+# Visual Studio
+.vs/
+*.user
+x64/
+
+# Build output
+Deviant/bin/
+Deviant/obj/
+
+# Runtime folders the game writes beside the executable
+save/
+files/
