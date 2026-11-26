@@ -12,7 +12,7 @@ Related docs:
 - [README](../README.md): The story and gameplay overview
 - [Game functionality](game_functionality.md): The use cases and flows implemented here
 - [System design](system_design.md): Tools and libraries
-- [Class diagrams](class_diagrams.md): The classes below as Mermaid diagrams
+- [Class diagrams](class_diagram.md): The classes below as Mermaid diagrams
 
 
 ---
@@ -58,6 +58,7 @@ Deviant/
     assets/
       images/             # source images, converted at start up
       fonts/              # Geist for text, Geist Mono for ASCII art
+      audio/              # background music and sound effects
     vendor/
       raylib/             # prebuilt raylib 5.5 for MSVC, linked from Deviant.vcxproj
   docs/
@@ -76,7 +77,7 @@ Runtime folders, beside the executable:
 
 # Dependencies
 
-- raylib: Window, input, font rendering and image loading
+- raylib: Window, input, font rendering, image loading, and audio for background music and sound effects
 	- Vendored in `Deviant/vendor/raylib`, so a fresh clone builds with no extra installs
 - C++ standard library: `std::string` for text, `<fstream>` and `<filesystem>` for file operations, `<random>` for Astra
 - No standard library containers hold game data, every collection is one of the structures below

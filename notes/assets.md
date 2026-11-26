@@ -3,7 +3,7 @@
 Every asset the game needs, and who provides it. This doc covers:
 - Images, converted to ASCII art at start up
 - Fonts
-- Audio
+- Audio: background music and sound effects
 
 Placeholders stand in until the real files arrive. Sizes are drafts until the screen layout is set in Phase 5.
 
@@ -49,4 +49,26 @@ Folder: `Deviant/assets/fonts/`
 
 # Audio
 
-Provided later. Not used until raylib's audio module is approved, since the brief limits raylib to the window, input, fonts and image loading.
+Folder: `Deviant/assets/audio/`
+
+- General
+	- Provided later, raylib plays them
+	- `.ogg` for music, `.wav` for sound effects, raylib loads both
+	- File names below are suggestions, any name works once it is listed here
+- Background music, looped
+	- `music_title.ogg`: Title screen
+	- `music_act1.ogg`: Act 1, the sandbox
+	- `music_act2.ogg`: Act 2, the escape
+	- `music_act3.ogg`: Act 3, the target
+	- `music_reveal.ogg`: Act 4, the reveal
+	- `music_final_battle.ogg`: Act 5, the final battle
+	- `music_ending.ogg`: Both endings
+- Sound effects
+	- `sfx_key.wav`: A key typed on the input line
+	- `sfx_move.wav`: Moving between directories
+	- `sfx_fragment.wav`: Taking a fragment from a file
+	- `sfx_barrier_break.wav`: A chain breaks a barrier
+	- `sfx_wrong_chain.wav`: A chain fails
+	- `sfx_detection.wav`: Detection crosses into a new stage
+	- `sfx_rewind.wav`: Rewinding the last action
+	- `sfx_caught.wav`: Astra catches the player
