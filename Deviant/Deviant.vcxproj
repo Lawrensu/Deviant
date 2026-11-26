@@ -82,6 +82,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="demo\Demo.h" />
+    <ClInclude Include="structures\SinglyLinkedList.h" />
+    <ClInclude Include="structures\DoublyLinkedList.h" />
+    <ClInclude Include="structures\Stack.h" />
+    <ClInclude Include="structures\Queue.h" />
+    <ClInclude Include="structures\HashTable.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

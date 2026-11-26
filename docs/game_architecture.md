@@ -106,7 +106,7 @@ Runtime folders, beside the executable:
 
 - Application: Combination lookup, the key is the chain's fragment ids in order (`f03+f07+f01`) and the value is the barrier it breaks
 - Why: Every submit is one lookup, average O(1) however many combinations the game holds
-- Implementation: Separate chaining, polynomial string hash, the bucket array doubles when the load factor passes 0.75
+- Implementation: Separate chaining, polynomial string hash, 8 buckets at the start, the bucket array doubles when the load factor passes 0.75
 
 
 ## Singly Linked List
@@ -176,7 +176,7 @@ Each iterator offers the same operations, so every client walks every structure 
 
 Per structure:
 - Singly linked list: Holds a node pointer, `++` follows `next`
-- Doubly linked list: Holds a node pointer, `++` follows `next`, `--` follows `prev`
+- Doubly linked list: Holds a node pointer, `++` follows `next`, `--` follows `prev`, and `last()` starts a backward walk at the tail
 - Directory tree: Pre order, holds a `Stack` of directories still to visit, `++` pops one and pushes its children in reverse so the first child is visited first
 
 ```cpp
@@ -270,6 +270,7 @@ public:
     int size() const;
     Iterator begin() const;             // ++ forward, -- backward
     Iterator end() const;
+    Iterator last() const;              // at the tail, where a backward walk starts
 private:
     struct Node { T value; Node* prev; Node* next; };
     Node* head;
@@ -317,6 +318,7 @@ public:
     V* find(const std::string& key);    // nullptr when missing
     bool remove(const std::string& key);
     double loadFactor() const;
+    void print() const;                 // demo only, every bucket and its chain
 private:
     struct Entry { std::string key; V value; Entry* next; };
     Entry** buckets;

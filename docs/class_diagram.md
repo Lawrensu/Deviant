@@ -164,6 +164,7 @@ classDiagram
         +find(key) V*
         +remove(key) bool
         +loadFactor() double
+        +print() void
         -hash(key) int
         -rehash() void
     }
@@ -247,6 +248,7 @@ classDiagram
         +size() int
         +begin() DoublyLinkedListIterator
         +end() DoublyLinkedListIterator
+        +last() DoublyLinkedListIterator
     }
     class DoublyLinkedListNode {
         +T value
@@ -403,6 +405,7 @@ classDiagram
     class DoublyLinkedList~T~ {
         +begin() DoublyLinkedListIterator
         +end() DoublyLinkedListIterator
+        +last() DoublyLinkedListIterator
     }
     class DirectoryTree {
         +begin() PreorderIterator
