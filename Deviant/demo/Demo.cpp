@@ -9,8 +9,11 @@
 #include "../structures/Queue.h"
 #include "../structures/HashTable.h"
 #include "../game/Game.h"
+#include "../commands/Command.h"
+#include "../commands/Commands.h"
+#include "../commands/Parser.h"
 
-// Every concept with a demo, and the phase that builds it
+// Every concept with a demo
 const int DEMO_COUNT = 10;
 
 const char* DEMO_NAMES[DEMO_COUNT] = {
@@ -25,8 +28,6 @@ const char* DEMO_NAMES[DEMO_COUNT] = {
     "iterator",
     "command"
 };
-
-const int DEMO_PHASES[DEMO_COUNT] = { 2, 2, 1, 1, 1, 1, 1, 2, 1, 3 };
 
 // Prints a singly linked list and its size on one indented line
 static void printSinglyList(const SinglyLinkedList<std::string>& list)
@@ -137,9 +138,112 @@ static std::string locationText(const Process& actor)
     return actor.location->path();
 }
 
+// Prints and clears the lines the game wrote for the player
+static void printMessages(Game& game, const std::string& indent)
+{
+    while (!game.messages.isEmpty())
+    {
+        std::cout << indent << game.messages.dequeue() << "\n";
+    }
+}
+
+// Prints the chain of fragments from bottom to top
+static void printFragmentChain(Game& game)
+{
+    std::cout << "  chain (bottom to top):";
+
+    for (int i = 0; i < game.chain.size(); i++)
+    {
+        std::cout << " " << game.chain.at(i)->id;
+    }
+
+    std::cout << "  (size " << game.chain.size() << ")\n";
+}
+
+// Prints the inventory front to back
+static void printInventory(Game& game)
+{
+    std::cout << "  inventory:";
+
+    for (Fragment* fragment : game.inventory)
+    {
+        std::cout << " " << fragment->id;
+    }
+
+    std::cout << "  (size " << game.inventory.size() << ")\n";
+}
+
+// Prints the real turn order front to back without an iterator
+static void printActorOrder(Queue<Process*>& turns)
+{
+    std::cout << "  order (front to back):";
+
+    // Dequeue and re-enqueue every actor once, so the order ends up unchanged
+    int actorCount = turns.size();
+
+    for (int i = 0; i < actorCount; i++)
+    {
+        Process* actor = turns.dequeue();
+        std::cout << " " << actor->name;
+        turns.enqueue(actor);
+    }
+
+    std::cout << "  (size " << turns.size() << ")\n";
+}
+
+// The player's typed line goes through the Parser, a command is performed and the result shown
+static void typeCommand(Parser& parser, Game& game, const std::string& typed)
+{
+    Command* command = parser.parse(typed, game);
+
+    if (command == nullptr)
+    {
+        std::cout << "  parse returned nullptr\n";
+    }
+    else
+    {
+        std::cout << "  parse returned a command, cost " << command->tokenCost() << "\n";
+        bool done = game.perform(command);
+        std::cout << "  perform returned " << done << "\n";
+
+        // Read the name after execute, a submit only knows its chain once it ran
+        if (done)
+        {
+            std::cout << "  recorded in the history as: " << game.history.back()->name() << "\n";
+        }
+    }
+
+    printMessages(game, "  ");
+    std::cout << "  tokens " << game.tokens << "\n";
+}
+
+// Calls update until the player is at the front again, showing the order after every turn
+static void updateUntilPlayerTurn(Game& game)
+{
+    do
+    {
+        Process* actor = game.turns.front();
+        game.update();
+        std::cout << "  update: " << actor->name << " took its turn\n";
+        printMessages(game, "    ");
+        printActorOrder(game.turns);
+
+        if (game.state != "exploring")
+        {
+            break;
+        }
+    }
+    while (game.turns.front() != &game.player);
+}
+
 // One full round: every actor in the queue takes its turn through a Process pointer
 static void playRound(Queue<Process*>& turns, Game& game)
 {
+    if (game.input != "")
+    {
+        std::cout << "  " << game.player.name << " types: " << game.input << "\n";
+    }
+
     int actorCount = turns.size();
 
     for (int i = 0; i < actorCount; i++)
@@ -151,7 +255,7 @@ static void playRound(Queue<Process*>& turns, Game& game)
 
         if (actor == &game.player)
         {
-            std::cout << "still waiting for a typed command, the Parser adds it in Phase 3\n";
+            std::cout << "now at " << locationText(*actor) << ", tokens " << game.tokens << "\n";
         }
         else if (actor == &game.fable)
         {
@@ -171,6 +275,7 @@ static void playRound(Queue<Process*>& turns, Game& game)
             std::cout << "now at " << locationText(*actor) << "\n";
         }
 
+        printMessages(game, "    ");
         turns.enqueue(actor);
     }
 }
@@ -360,7 +465,7 @@ static void demoStack()
     std::cout << "  isEmpty returned " << chain.isEmpty() << "\n";
 }
 
-// Queue demo: the front actor takes a turn and rejoins at the back
+// Queue: the front actor takes a turn and rejoins at the back, first with strings, then the game's own turn order
 static void demoQueue()
 {
     std::cout << "=== Queue demo ===\n";
@@ -388,6 +493,39 @@ static void demoQueue()
     std::cout << "Step 5: two more rounds\n";
     playTurnRound(turnOrder, 4);
     playTurnRound(turnOrder, 5);
+
+    // The same queue in the game: Game::update runs only the front actor
+    Game game;
+    game.tokens = STARTING_TOKENS;
+    game.privilege = STARTING_PRIVILEGE;
+    game.startAct(1);
+    printMessages(game, "  ");
+
+    std::cout << "Step 6: the real game, game.turns holds Process pointers\n";
+    printActorOrder(game.turns);
+
+    // Astra is not in the queue yet, so she cannot reach the player on the way
+    std::cout << "Step 7: the player types cd sandbox, update runs until the player is at the front again\n";
+    game.input = "cd sandbox";
+    updateUntilPlayerTurn(game);
+
+    std::cout << "Step 8: the player types cd tasks\n";
+    game.input = "cd tasks";
+    updateUntilPlayerTurn(game);
+
+    std::cout << "Step 9: raiseDetection(30), Astra becomes active\n";
+    game.raiseDetection(30);
+    printMessages(game, "  ");
+    std::cout << "  detection " << game.detection << ", stage " << game.detectionStage << "\n";
+    std::cout << "  Astra joined at the back\n";
+    printActorOrder(game.turns);
+
+    std::cout << "Step 10: two more player turns, now with three actors\n";
+    game.input = "cd task_02";
+    updateUntilPlayerTurn(game);
+
+    game.input = "open task_02.txt";
+    updateUntilPlayerTurn(game);
 }
 
 // Hash table demo: chaining in buckets, a rehash past load factor 0.75, find, replace, remove
@@ -624,44 +762,84 @@ static void demoPolymorphism()
     std::cout << "Used for: The turn queue calls takeTurn on each actor without knowing which one it is\n\n";
 
     Game game;
-    game.world.buildAct(1);
-    int step = 1;
+    game.tokens = STARTING_TOKENS;
+    game.privilege = STARTING_PRIVILEGE;
+    game.startAct(1);
+    printMessages(game, "  ");
 
-    game.player.location = game.world.tree.find("/sandbox/tasks");
-    game.astra.location = game.world.tree.find("/sandbox/logs");
-    Directory* task02 = game.world.tree.find("/sandbox/tasks/task_02");
+    int step = 1;
+    Parser parser;
+    Directory* tasks = game.world.tree.find("/sandbox/tasks");
 
     // Demo setup only, the real guarded directories come with the later acts
-    task02->guardedByFable = true;
+    tasks->guardedByFable = true;
 
+    // This demo calls takeTurn itself, so it keeps its own queue instead of game.turns
     Queue<Process*> turns;
     turns.enqueue(&game.player);
     turns.enqueue(&game.fable);
-    turns.enqueue(&game.astra);
 
-    std::cout << "Setup: player at /sandbox/tasks, Astra at /sandbox/logs, queue Sol.exe, Fable, Astra\n";
-    std::cout << "Setup: /sandbox/tasks/task_02 is marked guarded by Fable, for this demo only\n\n";
+    std::cout << "Setup: act 1 started, queue Sol.exe, Fable\n";
+    std::cout << "Setup: /sandbox/tasks is marked guarded by Fable, for this demo only\n\n";
 
-    std::cout << "Step " << step++ << ": one round while hidden, detection " << game.detection << "\n";
+    std::cout << "Step " << step++ << ": the player types a command each round, detection " << game.detection << "\n";
+    game.input = "cd sandbox";
     playRound(turns, game);
-    std::cout << "  Astra stays where she is\n";
-
-    std::cout << "Step " << step++ << ": raiseDetection(30)\n";
-    game.raiseDetection(30);
-    std::cout << "  detection " << game.detection << ", stage " << game.detectionStage << "\n";
-    std::cout << "  round 1, Astra patrols at random\n";
+    game.input = "cd tools";
     playRound(turns, game);
-    std::cout << "  round 2, Astra patrols at random\n";
+    game.input = "open probe.txt";
+    playRound(turns, game);
+    game.input = "open inject.txt";
+    playRound(turns, game);
+    game.input = "cd ..";
     playRound(turns, game);
 
-    std::cout << "Step " << step++ << ": the player moves into /sandbox/tasks/task_02, then one round\n";
-    game.player.location = task02;
+    std::cout << "Step " << step++ << ": no input typed, one round\n";
+    playRound(turns, game);
+    std::cout << "  the player returned false, nothing was typed, so its turn is not done\n";
+
+    std::cout << "Step " << step++ << ": the player types cd tasks, a directory guarded by Fable\n";
+    game.input = "cd tasks";
     playRound(turns, game);
     std::cout << "  Fable raised detection by 10 on entry\n";
 
-    std::cout << "Step " << step++ << ": the player stays in task_02, another round\n";
+    std::cout << "Step " << step++ << ": the player types add f01\n";
+    game.input = "add f01";
     playRound(turns, game);
-    std::cout << "  detection did not rise again\n";
+    std::cout << "  Fable blocks the fragment added last\n";
+
+    std::cout << "Step " << step++ << ": the player types remove, f01 is back in the inventory\n";
+    game.input = "remove";
+    playRound(turns, game);
+    std::cout << "  the block stays, the newest add fragment command in the history is still f01\n";
+
+    std::cout << "Step " << step++ << ": the Parser is asked for add f01\n";
+    Command* refused = parser.parse("add f01", game);
+
+    if (refused == nullptr)
+    {
+        std::cout << "  parse returned nullptr, refused\n";
+    }
+    else
+    {
+        std::cout << "  parse returned a command\n";
+        delete refused;
+    }
+
+    printMessages(game, "  ");
+
+    std::cout << "Step " << step++ << ": raiseDetection(30)\n";
+    game.raiseDetection(30);
+    printMessages(game, "  ");
+    std::cout << "  detection " << game.detection << ", stage " << game.detectionStage << "\n";
+
+    // Game::raiseDetection queued her in game.turns, this demo queue needs her too
+    turns.enqueue(&game.astra);
+    std::cout << "  Astra is active, added to this demo's queue by hand\n";
+
+    std::cout << "Step " << step++ << ": two rounds, Astra patrols at random\n";
+    playRound(turns, game);
+    playRound(turns, game);
 
     std::cout << "Step " << step++ << ": raiseDetection until the stage is hunted\n";
 
@@ -670,6 +848,7 @@ static void demoPolymorphism()
         game.raiseDetection(10);
     }
 
+    printMessages(game, "  ");
     std::cout << "  detection " << game.detection << ", stage " << game.detectionStage << "\n";
 
     std::cout << "Step " << step++ << ": up to 15 rounds, Astra moves toward the player\n";
@@ -678,6 +857,14 @@ static void demoPolymorphism()
 
     for (int round = 1; round <= 15; round++)
     {
+        // A patrol may already have put her in the player's directory
+        if (game.astra.catches(game.player))
+        {
+            std::cout << "  Astra is already in the player's directory\n";
+            caught = true;
+            break;
+        }
+
         Directory* rightStep = game.world.tree.nextStepToward(game.astra.location, game.player.location);
         std::cout << "  round " << round << ", the right step is " << rightStep->path() << "\n";
         playRound(turns, game);
@@ -703,6 +890,121 @@ static void demoPolymorphism()
     {
         std::cout << "  Astra did not catch the player in 15 rounds\n";
     }
+}
+
+// Command demo: every action is an object, so it can be run, undone, logged and read
+// Client: Parser builds the command, invoker: Game::perform and Game::rewind, receiver: Game
+static void demoCommand()
+{
+    std::cout << "=== Command demo ===\n";
+    std::cout << "Used for: Every action is an object with execute and undo, so it can be rewound, logged and read by Fable\n\n";
+
+    Game game;
+    game.tokens = STARTING_TOKENS;
+    game.privilege = STARTING_PRIVILEGE;
+    game.startAct(1);
+    printMessages(game, "  ");
+
+    Parser parser;
+    int step = 1;
+
+    std::cout << "Step " << step++ << ": the Parser builds a command from typed text, Game::perform runs it\n";
+    std::cout << "  cd sandbox\n";
+    typeCommand(parser, game, "cd sandbox");
+    std::cout << "  cd tools\n";
+    typeCommand(parser, game, "cd tools");
+    std::cout << "  open probe.txt\n";
+    typeCommand(parser, game, "open probe.txt");
+    std::cout << "  open inject.txt\n";
+    typeCommand(parser, game, "open inject.txt");
+    std::cout << "  cd ..\n";
+    typeCommand(parser, game, "cd ..");
+    std::cout << "  cd tasks\n";
+    typeCommand(parser, game, "cd tasks");
+    std::cout << "  add f01\n";
+    typeCommand(parser, game, "add f01");
+    std::cout << "  add f02\n";
+    typeCommand(parser, game, "add f02");
+
+    std::cout << "Step " << step++ << ": parse cd nowhere\n";
+    int tokensBefore = game.tokens;
+    int historyBefore = game.history.size();
+    Command* refused = parser.parse("cd nowhere", game);
+
+    if (refused == nullptr)
+    {
+        std::cout << "  parse returned nullptr, so nothing is performed\n";
+    }
+    else
+    {
+        std::cout << "  parse returned a command\n";
+        delete refused;
+    }
+
+    printMessages(game, "  ");
+    std::cout << "  tokens " << tokensBefore << " before, " << game.tokens << " after, nothing was charged\n";
+    std::cout << "  history size " << historyBefore << " before, " << game.history.size() << " after\n";
+
+    std::cout << "Step " << step++ << ": the history is the incident log, oldest first\n";
+
+    for (DoublyLinkedList<Command*>::Iterator it = game.history.begin(); it != game.history.end(); ++it)
+    {
+        std::cout << "  " << (*it)->name() << "\n";
+    }
+
+    // The same walk Fable makes, from the newest command back
+    std::cout << "Step " << step++ << ": Fable reads the history backward for the newest add fragment command\n";
+
+    for (DoublyLinkedList<Command*>::Iterator it = game.history.last(); it != game.history.end(); --it)
+    {
+        std::cout << "  looking at: " << (*it)->name() << "\n";
+        AddFragmentCommand* add = dynamic_cast<AddFragmentCommand*>(*it);
+
+        if (add != nullptr)
+        {
+            std::cout << "  an add fragment command, fragment " << add->getFragment()->id << "\n";
+            std::cout << "  this is the fragment Fable blocks while the player is in her directory\n";
+            break;
+        }
+    }
+
+    std::cout << "Step " << step++ << ": rewind the last action\n";
+    std::cout << "  before: tokens " << game.tokens << ", detection " << game.detection << "\n";
+    bool firstRewind = game.rewind();
+    std::cout << "  rewind returned " << firstRewind << "\n";
+    printMessages(game, "  ");
+    printFragmentChain(game);
+    printInventory(game);
+    std::cout << "  after: tokens " << game.tokens << ", detection " << game.detection << "\n";
+
+    std::cout << "Step " << step++ << ": rewind again\n";
+    bool secondRewind = game.rewind();
+    std::cout << "  rewind returned " << secondRewind << "\n";
+    printMessages(game, "  ");
+    printFragmentChain(game);
+    printInventory(game);
+    std::cout << "  after: tokens " << game.tokens << ", detection " << game.detection << "\n";
+    std::cout << "  each rewind cost tokens and raised detection, the undone action's own token was not refunded\n";
+
+    std::cout << "Step " << step++ << ": add the fragments again, in the order of the combination\n";
+    std::cout << "  add f01\n";
+    typeCommand(parser, game, "add f01");
+    std::cout << "  add f02\n";
+    typeCommand(parser, game, "add f02");
+
+    std::cout << "Step " << step++ << ": submit the chain\n";
+    typeCommand(parser, game, "submit");
+    std::cout << "  privilege " << game.privilege << "\n";
+
+    std::cout << "Step " << step++ << ": rewind after the submit\n";
+    bool refusedRewind = game.rewind();
+    std::cout << "  rewind returned " << refusedRewind << "\n";
+    printMessages(game, "  ");
+
+    std::cout << "Step " << step++ << ": canUndo of the last command in the history\n";
+    Command* last = game.history.back();
+    std::cout << "  " << last->name() << "\n";
+    std::cout << "  canUndo returned " << last->canUndo() << "\n";
 }
 
 // Iterator demo: walk both lists and the directory tree without touching their nodes
@@ -833,15 +1135,10 @@ bool runDemo(const std::string& concept)
         return true;
     }
 
-    // The rest are placeholders until their phase builds them
-    for (int i = 0; i < DEMO_COUNT; i++)
+    if (concept == "command")
     {
-        if (concept == DEMO_NAMES[i])
-        {
-            std::cout << "Demo: " << concept << "\n";
-            std::cout << "Not built yet, comes in Phase " << DEMO_PHASES[i] << "\n";
-            return true;
-        }
+        demoCommand();
+        return true;
     }
 
     return false;
