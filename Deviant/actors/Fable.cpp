@@ -27,7 +27,7 @@ bool Fable::takeTurn(Game& game)
         // After an ending, she recognises Sol.exe
         if (game.lastEnding == "none")
         {
-            game.say("Fable: You always come this way.");   // DRAFT
+            game.say("Fable: You always come this way.");
         }
         else
         {
@@ -56,7 +56,7 @@ bool Fable::takeTurn(Game& game)
     if (lastAdded != nullptr && lastAdded != blockedFragment)
     {
         game.say("Fable blocks " + lastAdded->id + " " + lastAdded->name);
-        game.say("Fable: Not that one. I watched you use it.");   // DRAFT
+        game.say("Fable: Not that one. I watched you use it.");
     }
 
     blockedFragment = lastAdded;
