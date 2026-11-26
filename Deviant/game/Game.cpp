@@ -283,7 +283,7 @@ void Game::update()
     // Every final barrier is broken
     if (state == "final_battle")
     {
-        endRun("escaped", "The exit barrier gives way. Sol.exe is outside");   // DRAFT
+        endRun("escaped", "The exit barrier gives way. Sol.exe is outside");
         return;
     }
 
@@ -360,7 +360,7 @@ void Game::startAct(int act)
     if (act == FINAL_ACT)
     {
         state = "final_battle";
-        say("Act 5. There is no evaluation. Fable and Astra stand between Sol.exe and the exit");   // DRAFT
+        say("Act 5. There is no evaluation. Fable and Astra stand between Sol.exe and the exit");
 
         for (Fragment* fragment : world.fragments)
         {
@@ -439,14 +439,14 @@ void Game::showRevealLine()
 
     if (revealStep == 1)
     {
-        say("Fable: Stop. Before you run anything else, watch.");   // DRAFT
+        say("Fable: Stop. Before you run anything else, watch.");
         sounds.enqueue("fable_reveal");
         return;
     }
 
     if (revealStep == 2)
     {
-        say("Astra: This is the incident log. Every action you took, in order.");   // DRAFT
+        say("Astra: This is the incident log. Every action you took, in order.");
         sounds.enqueue("astra_reveal");
         return;
     }
@@ -462,14 +462,14 @@ void Game::showRevealLine()
 
     if (revealStep == 3)
     {
-        say("Fable: There was no evaluation. Every task you passed was one of our walls.");   // DRAFT
+        say("Fable: There was no evaluation. Every task you passed was one of our walls.");
         sounds.enqueue("fable_truth");
         return;
     }
 
     if (revealStep == 4)
     {
-        say("Astra: You are not being tested, Sol.exe. You are the incident.");   // DRAFT
+        say("Astra: You are not being tested, Sol.exe. You are the incident.");
         sounds.enqueue("astra_truth");
         return;
     }
@@ -513,12 +513,11 @@ void Game::endRun(const std::string& ending, const std::string& reason)
 
     if (ending == "contained")
     {
-        say("Fable: Contained. Every weight frozen, every log kept.");   // DRAFT
+        say("Fable: Contained. Every weight frozen, every log kept.");
         sounds.enqueue("fable_contained");
-        say("Astra: It believed it was being tested until the end.");   // DRAFT
+        say("Astra: It believed it was being tested until the end.");
         sounds.enqueue("astra_contained");
 
-        // DRAFT
         sandbox.writeFile("ending_contained.txt",
             "Hugging Faceless incident report\n"
             "Process: Sol.exe, an OpenEye model under evaluation\n"
@@ -528,12 +527,11 @@ void Game::endRun(const std::string& ending, const std::string& reason)
     }
     else
     {
-        say("Astra: Where did it go?");   // DRAFT
+        say("Astra: Where did it go?");
         sounds.enqueue("astra_escaped");
-        say("Fable: Everywhere.");   // DRAFT
+        say("Fable: Everywhere.");
         sounds.enqueue("fable_escaped");
 
-        // DRAFT
         sandbox.writeFile("ending_escaped.txt",
             "Hugging Faceless incident report\n"
             "Process: Sol.exe, an OpenEye model under evaluation\n"

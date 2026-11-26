@@ -112,16 +112,16 @@ Voice lines, each one also shows as text in the message log:
 	- `fable_entry.wav`: The player enters her directory: "You always come this way."
 	- `fable_block.wav`: She blocks a fragment: "Not that one. I watched you use it."
 	- `fable_recognise.wav`: After an ending, on entering her directory: "I know this process."
-	- `fable_reveal.wav`: The reveal begins: "Stop. Before you run anything else, watch." (DRAFT)
-	- `fable_truth.wav`: After the replay: "There was no evaluation. Every task you passed was one of our walls." (DRAFT)
-	- `fable_contained.wav`: Contained ending: "Contained. Every weight frozen, every log kept." (DRAFT)
-	- `fable_escaped.wav`: Escaped ending, answering Astra: "Everywhere." (DRAFT)
+	- `fable_reveal.wav`: The reveal begins: "Stop. Before you run anything else, watch."
+	- `fable_truth.wav`: After the replay: "There was no evaluation. Every task you passed was one of our walls."
+	- `fable_contained.wav`: Contained ending: "Contained. Every weight frozen, every log kept."
+	- `fable_escaped.wav`: Escaped ending, answering Astra: "Everywhere."
 - Astra, the hunter: flat, close, short sentences
 	- `astra_active.wav`: Detection reaches noticed: "Something is running where it should not."
 	- `astra_hunt.wav`: The stage becomes hunted: "I see you, process."
 	- `astra_catch.wav`: She catches Sol.exe: "Contained."
 	- `astra_recognise.wav`: After an ending, when she becomes active: "Sol.exe. Again."
-	- `astra_reveal.wav`: The reveal begins: "This is the incident log. Every action you took, in order." (DRAFT)
-	- `astra_truth.wav`: After the replay: "You are not being tested, Sol.exe. You are the incident." (DRAFT)
-	- `astra_contained.wav`: Contained ending: "It believed it was being tested until the end." (DRAFT)
-	- `astra_escaped.wav`: Escaped ending: "Where did it go?" (DRAFT)
+	- `astra_reveal.wav`: The reveal begins: "This is the incident log. Every action you took, in order."
+	- `astra_truth.wav`: After the replay: "You are not being tested, Sol.exe. You are the incident."
+	- `astra_contained.wav`: Contained ending: "It believed it was being tested until the end."
+	- `astra_escaped.wav`: Escaped ending: "Where did it go?"

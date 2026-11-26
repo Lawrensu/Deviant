@@ -128,7 +128,6 @@ void World::buildAct1()
 }
 
 // Act 2, the escape: the tasks reach outside the sandbox, and a file that does not belong appears in the game folder
-// DRAFT: every name, text and number in this act
 void World::buildAct2()
 {
     // Fragments
@@ -194,7 +193,6 @@ void World::buildAct2()
 }
 
 // Act 3, the target: inside Hugging Faceless, Fable guards three directories and Astra waits in security
-// DRAFT: every name, text and number in this act
 void World::buildAct3()
 {
     // Fragments
@@ -273,7 +271,6 @@ void World::buildAct3()
 }
 
 // Act 5, the final battle: Sol.exe carries every fragment it needs, Fable guards every directory and Astra hunts from the start
-// DRAFT: every name, text and number in this act
 void World::buildAct5()
 {
     // Fragments, Game puts every one in the inventory when the act starts
