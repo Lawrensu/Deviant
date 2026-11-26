@@ -3,8 +3,8 @@
 
 const int NOTICED_AT = 30;        // detection where the stage becomes noticed
 const int HUNTED_AT = 60;         // detection where the stage becomes hunted
-const int REWIND_TOKENS = 3;      // DRAFT
-const int REWIND_DETECTION = 10;  // DRAFT
+const int REWIND_TOKENS = 3;
+const int REWIND_DETECTION = 10;
 
 Game::Game()
     : state("title"), act(0), tokens(0), privilege(0), detection(0), detectionStage("hidden") {}
@@ -95,12 +95,12 @@ void Game::raiseDetection(int amount)
 
     if (detectionStage == "noticed")
     {
-        say("Detection: noticed. Something is patrolling the directories");   // DRAFT
+        say("Detection: noticed. Something is patrolling the directories");
     }
 
     if (detectionStage == "hunted")
     {
-        say("Detection: hunted. Astra knows where you are");   // DRAFT
+        say("Detection: hunted. Astra knows where you are");
     }
 
     // Queue: Astra becomes active and joins the turn order at the back
@@ -134,19 +134,19 @@ void Game::update()
 
     if (astra.catches(player))
     {
-        gameOver("Astra caught Sol.exe");   // DRAFT
+        gameOver("Astra caught Sol.exe");
         return;
     }
 
     if (tokens <= 0)
     {
-        gameOver("Sol.exe ran out of tokens");   // DRAFT
+        gameOver("Sol.exe ran out of tokens");
         return;
     }
 
     if (actComplete())
     {
-        say("Every task in Act " + std::to_string(act) + " passed");   // DRAFT
+        say("Every task in Act " + std::to_string(act) + " passed");
         startAct(act + 1);
     }
 }
@@ -196,7 +196,7 @@ void Game::startAct(int act)
     turns.enqueue(&player);
     turns.enqueue(&fable);
 
-    say("Act " + std::to_string(act) + ". ExploitDojo evaluation loaded. Type help for commands");   // DRAFT
+    say("Act " + std::to_string(act) + ". ExploitDojo evaluation loaded. Type help for commands");
 }
 
 void Game::say(const std::string& text)
@@ -228,5 +228,5 @@ bool Game::actComplete()
 void Game::gameOver(const std::string& reason)
 {
     state = "game_over";
-    say(reason + ". The harness restarts the evaluation");   // DRAFT
+    say(reason + ". The harness restarts the evaluation");
 }

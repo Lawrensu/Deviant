@@ -232,7 +232,7 @@ Command* Parser::parseAdd(const std::string& argument, Game& game)
     // Fable blocks the fragment added last while the player is in her directory
     if (fragment == game.fable.blockedFragment)
     {
-        game.say("Fable blocks " + fragment->id + " here");   // DRAFT
+        game.say("Fable blocks " + fragment->id + " here");
         return nullptr;
     }
 

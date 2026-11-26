@@ -22,7 +22,7 @@ bool Fable::takeTurn(Game& game)
     // Player just entered one of her directories
     if (playerAt != watching)
     {
-        game.say("Fable guards this directory");   // DRAFT
+        game.say("Fable guards this directory");
         game.raiseDetection(FABLE_ENTRY_DETECTION);
         watching = playerAt;
     }
@@ -44,7 +44,7 @@ bool Fable::takeTurn(Game& game)
     // Tell the player when the block changes
     if (lastAdded != nullptr && lastAdded != blockedFragment)
     {
-        game.say("Fable blocks " + lastAdded->id + " " + lastAdded->name);   // DRAFT
+        game.say("Fable blocks " + lastAdded->id + " " + lastAdded->name);
     }
 
     blockedFragment = lastAdded;

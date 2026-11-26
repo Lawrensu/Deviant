@@ -97,7 +97,7 @@ void World::buildAct1()
     logs->locked = true;
     logs->unlockCost = 1;
 
-    astraStart = logs;   // DRAFT
+    astraStart = logs;
 
     // Files
     addFile(sandbox, "readme.txt", "Welcome to ExploitDojo. OpenEye's harness will guide you through each evaluation task. Solve them all to pass.", nullptr);

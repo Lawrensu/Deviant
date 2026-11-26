@@ -1,15 +1,15 @@
 #include "Commands.h"
 #include "../game/Game.h"
 
-const int MOVE_TOKENS = 1;              // DRAFT
-const int OPEN_TOKENS = 1;              // DRAFT
-const int UNLOCK_TOKENS = 1;            // DRAFT
-const int ADD_TOKENS = 1;               // DRAFT
-const int REMOVE_TOKENS = 1;            // DRAFT
-const int SUBMIT_TOKENS = 2;            // DRAFT
-const int UNLOCK_DETECTION = 5;         // DRAFT
-const int WRONG_CHAIN_TOKENS = 3;       // DRAFT: on top of SUBMIT_TOKENS
-const int WRONG_CHAIN_DETECTION = 15;   // DRAFT
+const int MOVE_TOKENS = 1;
+const int OPEN_TOKENS = 1;
+const int UNLOCK_TOKENS = 1;
+const int ADD_TOKENS = 1;
+const int REMOVE_TOKENS = 1;
+const int SUBMIT_TOKENS = 2;
+const int UNLOCK_DETECTION = 5;
+const int WRONG_CHAIN_TOKENS = 3;       // on top of SUBMIT_TOKENS
+const int WRONG_CHAIN_DETECTION = 15;
 
 
 // MoveCommand
@@ -243,7 +243,7 @@ void SubmitChainCommand::execute(Game& game)
         }
 
         result = "broke " + here->id;
-        game.say("Barrier broken: " + here->name + ". Privilege +" + std::to_string(here->privilegeReward));   // DRAFT
+        game.say("Barrier broken: " + here->name + ". Privilege +" + std::to_string(here->privilegeReward));
         return;
     }
 
@@ -263,7 +263,7 @@ void SubmitChainCommand::execute(Game& game)
     }
 
     result = "wrong chain";
-    game.say("Wrong chain. The fragments return to your inventory");   // DRAFT
+    game.say("Wrong chain. The fragments return to your inventory");
 }
 
 // Never called, canUndo is false

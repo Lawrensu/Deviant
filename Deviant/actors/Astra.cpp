@@ -22,7 +22,7 @@ bool Astra::takeTurn(Game& game)
     if (game.detectionStage == "noticed")
     {
         location = randomNeighbour(location, nullptr);
-        game.say("Astra patrols " + location->path());   // DRAFT
+        game.say("Astra patrols " + location->path());
         return true;
     }
 
@@ -49,7 +49,7 @@ bool Astra::takeTurn(Game& game)
             location = rightStep;
         }
 
-        game.say("Astra moves to " + location->path());   // DRAFT
+        game.say("Astra moves to " + location->path());
     }
 
     return true;

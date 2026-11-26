@@ -13,9 +13,9 @@
 
 class Command;
 
-const int CHAIN_LIMIT = 4;           // DRAFT
-const int STARTING_TOKENS = 60;      // DRAFT
-const int STARTING_PRIVILEGE = 0;    // DRAFT
+const int CHAIN_LIMIT = 4;
+const int STARTING_TOKENS = 60;
+const int STARTING_PRIVILEGE = 0;
 
 // The game state, resources, actors and turn loop
 // Invoker of the Command pattern: perform runs a command, rewind undoes the last one
