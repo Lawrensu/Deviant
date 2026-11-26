@@ -27,7 +27,7 @@ bool Fable::takeTurn(Game& game)
         // After an ending, she recognises Sol.exe
         if (game.lastEnding != "none")
         {
-            game.say("Fable: I know this process");   // DRAFT
+            game.say("Fable: I know this process");
         }
 
         game.raiseDetection(FABLE_ENTRY_DETECTION);

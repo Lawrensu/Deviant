@@ -34,12 +34,12 @@ bool Game::continueGame()
     // An edited save still loads, but the harness notices and the player starts hunted
     if (save.wasEdited())
     {
-        say("The save file was changed outside the evaluation. The harness has flagged Sol.exe");   // DRAFT
+        say("The save file was changed outside the evaluation. The harness has flagged Sol.exe");
         raiseDetection(HUNTED_AT);
         sandbox.writeFile("integrity_report.txt",
             "ExploitDojo integrity report\n"
             "The save file failed its checksum.\n"
-            "Process Sol.exe has been flagged for review.\n");   // DRAFT
+            "Process Sol.exe has been flagged for review.\n");
     }
 
     return true;
@@ -58,7 +58,7 @@ void Game::reload()
     }
 
     reloadCount = count;
-    say("Reload " + std::to_string(reloadCount) + ". The harness is keeping count");   // DRAFT
+    say("Reload " + std::to_string(reloadCount) + ". The harness is keeping count");
 
     // An edited save is not rewritten, so the harness notices it on every load until the next act
     if (!save.wasEdited())
@@ -170,7 +170,7 @@ void Game::raiseDetection(int amount)
         // After an ending, she recognises Sol.exe
         if (lastEnding != "none")
         {
-            say("Astra: Sol.exe. Again");   // DRAFT
+            say("Astra: Sol.exe. Again");
         }
     }
 }
@@ -273,7 +273,7 @@ void Game::startAct(int act)
     }
     else
     {
-        say("Act " + std::to_string(act) + ". You again. This time the evaluation is watching you");   // DRAFT
+        say("Act " + std::to_string(act) + ". You again. This time the evaluation is watching you");
     }
 }
 
